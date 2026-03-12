@@ -8,9 +8,13 @@ from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
 from confluent_kafka.serialization import SerializationContext
 
-from device_generator.config import get_settings
-from device_generator.schema import device_metrics_key_to_dict, device_metrics_value_to_avro, DeviceMetricsValue
-from device_generator.schema import DeviceMetricsKey
+from backend.config import get_settings
+from backend.schema import (
+    DeviceMetricsKey,
+    DeviceMetricsValue,
+    device_metrics_key_to_dict,
+    device_metrics_value_to_avro,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +28,7 @@ def _make_subject_name_strategy(prefix: str) -> Callable[[Optional[Serialization
         return f":{prefix}:{ctx.topic}-{ctx.field}"
 
     return subject_name_strategy
+
 
 _producer: Producer | None = None
 _avro_key_serializer: AvroSerializer | None = None
@@ -39,7 +44,7 @@ def _get_schema_registry_client() -> SchemaRegistryClient:
     return SchemaRegistryClient(conf)
 
 
-def _get_schema_from_registry(subject: str) -> str:
+def _get_schema_from_registry(subject: str):
     """Fetch the latest schema for the subject from Schema Registry (no new schema pushed)."""
     registry = _get_schema_registry_client()
     registered = registry.get_latest_version(subject)
@@ -47,9 +52,7 @@ def _get_schema_from_registry(subject: str) -> str:
 
 
 def init_producer() -> None:
-    """Initialize Kafka producer and Avro key/value serializers. Idempotent.
-    Uses existing key and value schemas from Schema Registry (subjects: <topic>-key, <topic>-value).
-    """
+    """Initialize Kafka producer and Avro key/value serializers. Idempotent."""
     global _producer, _avro_key_serializer, _avro_value_serializer, _topic
     if _producer is not None:
         return
@@ -63,7 +66,6 @@ def init_producer() -> None:
         "sasl.username": s.kafka_sasl_username,
         "sasl.password": s.kafka_sasl_password,
     }
-   
     registry = _get_schema_registry_client()
     topic = s.kafka_topic
     key_subject = f":{s.schema_subject_prefix}:{topic}-key"
@@ -103,15 +105,13 @@ def init_producer() -> None:
 
 def delivery_report(err, msg):
     if err is not None:
-        print(f"Delivery failed for record {msg.key()}: {err}")
+        logger.warning("Delivery failed for record %s: %s", msg.key(), err)
     else:
-        print(f"Record {msg.key()} produced to {msg.topic()}[{msg.partition()}] @ offset {msg.offset()}")
+        logger.debug("Record %s produced to %s[%s] @ offset %s", msg.key(), msg.topic(), msg.partition(), msg.offset())
 
 
 def produce_device_metric(record: DeviceMetricsValue) -> None:
-    """Serialize and produce one device-metric record to Kafka. Call init_producer() first.
-    Key is Avro-serialized as {\"device_id\": \"<device_id>\"}; value is the full record.
-    """
+    """Serialize and produce one device-metric record to Kafka. Call init_producer() first."""
     if _producer is None or _avro_value_serializer is None or _avro_key_serializer is None:
         raise RuntimeError("Producer not initialized; call init_producer() first")
     key_obj = DeviceMetricsKey(record.device_id)

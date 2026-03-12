@@ -32,7 +32,7 @@ class DeviceMetricsKey(object):
   def __init__(self, device_id: str):
     self.device_id = device_id
   
-def device_metrics_to_dict(device_metrics: DeviceMetricsValue, ctx) -> dict:
+def device_metrics_value_to_avro(device_metrics: DeviceMetricsValue, ctx) -> dict:
   return dict[str, str | int | float | None](
     device_id=device_metrics.device_id,
     patient_id=device_metrics.patient_id,
