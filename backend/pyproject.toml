@@ -32,5 +32,5 @@ packages = ["src/backend"]
 testpaths = ["tests"]
 pythonpath = ["src"]
 markers = [
-    "integration: integration tests (require KAFKA and Confluent credentials)",
+    "integration: integration tests (require KAFKA_BOOTSTRAP_SERVERS and Confluent credentials)",
 ]

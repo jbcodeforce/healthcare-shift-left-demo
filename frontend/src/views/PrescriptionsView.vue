@@ -111,12 +111,13 @@ onMounted(async () => {
 }
 .device-row td {
   background: var(--accent-bg);
-  border-top: 2px solid var(--border);
+  color: var(--accent);
+  border-top: 2px solid var(--accent-border);
   padding: 0.6rem 0.75rem;
   font-size: 0.95rem;
 }
 .device-row .device-meta {
-  color: var(--text);
+  color: rgba(255, 255, 255, 0.9);
   font-weight: normal;
 }
 .rx-row td:first-child,

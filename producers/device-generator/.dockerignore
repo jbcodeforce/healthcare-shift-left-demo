@@ -1,9 +1,0 @@
-.venv/
-.env
-.git/
-__pycache__/
-*.pyc
-# README.md is required by hatchling at build time (pyproject.toml readme = "README.md")
-*.md
-!README.md
-.python-version
