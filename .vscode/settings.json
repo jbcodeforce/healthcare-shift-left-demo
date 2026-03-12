@@ -1,0 +1,9 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/producers/device-generator/.venv/bin/python",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/producers/device-generator/src"
+  ],
+  "cursorpyright.analysis.extraPaths": [
+    "${workspaceFolder}/producers/device-generator/src"
+  ]
+}

@@ -3,9 +3,9 @@
 import time
 
 import pytest
-from device_generator.producer import flush_producer, init_producer, produce_device_metric, _get_schema_registry_client
-from device_generator.simulation import is_simulation_running, stop_simulation
-from device_generator.schema import DeviceMetricsValue
+from backend.producer import flush_producer, init_producer, produce_device_metric, _get_schema_registry_client
+from backend.simulation import is_simulation_running, stop_simulation
+from backend.schema import DeviceMetricsValue
 from ..conftest import requires_kafka
 
 def test_get_schema_subjects(client) -> None:

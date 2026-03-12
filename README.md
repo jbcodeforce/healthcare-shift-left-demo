@@ -20,20 +20,33 @@ The figure should be self-explanatory
 ![](./docs/demo_components.drawio.png)
 
 
-### Running the device generator
+### Running the demo backend
 
-From the repo root, start the device telemetry producer (FastAPI + Kafka producer) with Docker Compose:
+The **backend** is the demo API and telemetry producer: REST endpoints for patients, devices, and prescriptions, plus simulation control and telemetry SSE.
+
+From the repo root, start the backend with Docker Compose:
 
 ```bash
-# Set Confluent Cloud Kafka and Schema Registry credentials (see producers/device-generator/.env.example)
-cp producers/device-generator/.env.example producers/device-generator/.env
-# edit producers/device-generator/.env
+# Set Confluent Cloud Kafka and Schema Registry credentials (see backend/.env.example)
+cp backend/.env.example backend/.env
+# edit backend/.env
 
-docker compose up -d device-generator
+docker compose up -d backend
 ```
 
-API: `http://localhost:8000` (health, simulation start/stop, SSE stream at `/telemetry/stream`).
+API: `http://localhost:8000` — `GET /patients`, `GET /devices`, `GET /prescriptions`, `GET /health`, `GET /simulation/status`, `POST /simulation/start`, `POST /simulation/stop`, `GET /telemetry/stream` (SSE).
 
+### Frontend
+
+A Vue.js control plane runs in `frontend/` and provides a home page with left navigation (Patients, Devices, Prescriptions, Device telemetry), plus simulation control and live telemetry stream.
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The app expects the backend API at `http://localhost:8000` by default. Override with `VITE_API_URL` (e.g. in `frontend/.env`). The control plane fetches patients, devices, and prescriptions from the backend and lets you start/stop the device simulation and connect to the live telemetry SSE stream.
 
 ## The Core Domain Classes
 
@@ -72,38 +85,8 @@ public class Device {
 }
 ```
 
-### B. HealthProvider Class
-This represents the doctor.
 
-```Java
-public class HealthProvider {
-    public String providerId;
-    public String organizationName;
-    public String specialty;   // e.g., "Cardiology", "General Practice"
-    public String NPI;         // National Provider Identifier
-    
-    public HealthProvider() {}
-}
-```
-
-### C. Encounter (The Stream Event)
-This is the "Fact" table that will flow through your Kafka topic. It is the most important class for Flink because it contains the timestamps.
-
-```Java
-public class Encounter {
-    public String encounterId;
-    public String patientId;    // Foreign Key to Patient
-    public String providerId;   // Foreign Key to Provider
-    public long timestamp;      // Event time for Flink Windowing
-    public String type;         // e.g., "Inpatient", "Ambulatory", "Emergency"
-    public double cost;         // For "Sum" or "Avg" aggregations
-    public String diagnosisCode; // ICD-10 code
-    
-    public Encounter() {}
-}
-```
-
-### D. Prescription Class
+### B. Prescription Class
 
 The "Desired State". It tells Flink what the device should be doing.
 
@@ -123,7 +106,7 @@ public class Prescription {
 }
 ```
 
-### E. DeviceTelemetry 
+### C. DeviceTelemetry 
 The "Observed State": This is the high-velocity stream coming from the hardware.
 
 ```Java
@@ -139,7 +122,7 @@ public class DeviceTelemetry {
 }
 ```
 
-### F. Drift Alert
+### D. Drift Alert
 ```java
 public class DriftAlert {
     public String deviceId;
@@ -149,6 +132,38 @@ public class DriftAlert {
     public double actualValue;
 }
 ```
+
+### HealthProvider Class (Future extension)
+This represents the doctor.
+
+```Java
+public class HealthProvider {
+    public String providerId;
+    public String organizationName;
+    public String specialty;   // e.g., "Cardiology", "General Practice"
+    public String NPI;         // National Provider Identifier
+    
+    public HealthProvider() {}
+}
+```
+
+### Encounter ( (Future extension)
+This is the "Fact" table that will flow through your Kafka topic. It is the most important class for Flink because it contains the timestamps.
+
+```Java
+public class Encounter {
+    public String encounterId;
+    public String patientId;    // Foreign Key to Patient
+    public String providerId;   // Foreign Key to Provider
+    public long timestamp;      // Event time for Flink Windowing
+    public String type;         // e.g., "Inpatient", "Ambulatory", "Emergency"
+    public double cost;         // For "Sum" or "Avg" aggregations
+    public String diagnosisCode; // ICD-10 code
+    
+    public Encounter() {}
+}
+```
+
 ## The Flink Use Case
 
 ### Compliance Alerting
@@ -166,3 +181,19 @@ Goal assess device reliability:
 
 
 If we do an insulin pump, we can have Flink detecting a spike in BloodGlucose (Telemetry). Then checks the Prescription for the maximum allowable dose, to finally sends a command back to a Kafka topic `device.commands` to trigger an insulin bolus automatically.
+
+
+## Deployment
+
+* Be sure to have set env variables. See[.env.example](.env.example)
+
+### With shift left tool
+
+```sh
+source set_j9r_env
+shift_left table build-inventory $PIPELINES
+shift_left pipeline build-all-metadata
+shift_left pipeline deploy --table-name device_metrics --compute-pool-id $FLINK_COMPUTE_POOL_ID
+shift_left pipeline deploy --table-name raw_devices --compute-pool-id $FLINK_COMPUTE_POOL_ID
+shift_left pipeline deploy --table-name raw_patients --compute-pool-id $FLINK_COMPUTE_POOL_ID
+```

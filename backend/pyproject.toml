@@ -1,0 +1,36 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Demo backend: REST API for patients, devices, prescriptions; device telemetry simulation to Kafka"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "confluent-kafka[avro]>=2.3.0",
+    "pydantic-settings>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "httpx>=0.27.0",
+    "ruff>=0.8.0",
+]
+
+[project.scripts]
+backend = "backend.main:run"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/backend"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+    "integration: integration tests (require KAFKA and Confluent credentials)",
+]
