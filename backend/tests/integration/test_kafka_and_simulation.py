@@ -3,9 +3,15 @@
 import time
 
 import pytest
+<<<<<<<< HEAD:backend/tests/integration/test_kafka_and_simulation.py
 from backend.producer import flush_producer, init_producer, produce_device_metric, _get_schema_registry_client
 from backend.simulation import is_simulation_running, stop_simulation
 from backend.schema import DeviceMetricsValue
+========
+from device_generator.producer import flush_producer, init_producer, produce_device_metric, _get_schema_registry_client
+from device_generator.simulation import is_simulation_running, stop_simulation
+from device_generator.schema import DeviceMetricsValue
+>>>>>>>> 0e0addfe9fd8f56eee2a9ed8472e160859466c6c:producers/device-generator/tests/integration/test_kafka_and_simulation.py
 from ..conftest import requires_kafka
 
 def test_get_schema_subjects(client) -> None:

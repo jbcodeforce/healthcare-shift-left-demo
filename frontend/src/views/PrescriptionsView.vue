@@ -111,13 +111,21 @@ onMounted(async () => {
 }
 .device-row td {
   background: var(--accent-bg);
+<<<<<<< HEAD
   color: var(--accent);
   border-top: 2px solid var(--accent-border);
+=======
+  border-top: 2px solid var(--border);
+>>>>>>> 0e0addfe9fd8f56eee2a9ed8472e160859466c6c
   padding: 0.6rem 0.75rem;
   font-size: 0.95rem;
 }
 .device-row .device-meta {
+<<<<<<< HEAD
   color: rgba(255, 255, 255, 0.9);
+=======
+  color: var(--text);
+>>>>>>> 0e0addfe9fd8f56eee2a9ed8472e160859466c6c
   font-weight: normal;
 }
 .rx-row td:first-child,

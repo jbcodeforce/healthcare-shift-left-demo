@@ -15,7 +15,11 @@ class Settings(BaseSettings):
 
     # Schema Registry (Confluent Cloud)
     schema_registry_url: str = ""
+<<<<<<<< HEAD:backend/src/backend/config.py
     schema_registry_basic_auth_user_info: str = ""
+========
+    schema_registry_basic_auth_user_info: str = ""  # "key:secret"
+>>>>>>>> 0e0addfe9fd8f56eee2a9ed8472e160859466c6c:producers/device-generator/src/device_generator/config.py
     schema_subject_prefix: str = ".flink-dev"
 
     # Simulation
