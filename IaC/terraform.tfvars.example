@@ -1,0 +1,25 @@
+# Copy to terraform.tfvars and set your values.
+# Do not commit terraform.tfvars (it may contain secrets).
+
+# Required: Confluent Cloud API credentials
+# confluent_cloud_api_key    = "..."
+# confluent_cloud_api_secret = "..."
+
+# Optional: cloud and region (defaults shown)
+# cloud_provider = "AWS"
+# cloud_region   = "us-east-1"
+# prefix         = "healthcare-demo"
+
+# Optional: use existing environment and/or Kafka cluster (leave unset to create new)
+# When set, Terraform will not create these resources and will use the existing ones.
+# If kafka_cluster_id is set, environment_id must also be set.
+# environment_id    = null
+# kafka_cluster_id  = null
+
+# Example: use existing environment and Kafka cluster (only Flink pool will be created)
+# environment_id   = "env-xxxxx"
+# kafka_cluster_id = "lkc-xxxxx"
+
+# Flink compute pool
+# flink_compute_pool_name = "healthcare-demo-pool"
+# flink_compute_pool_max_cfu = 5

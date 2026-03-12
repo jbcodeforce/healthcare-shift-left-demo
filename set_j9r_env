@@ -1,0 +1,18 @@
+export SL_KAFKA_API_KEY=$KAFKA_API_KEY
+export SL_KAFKA_API_SECRET=$KAFKA_API_SECRET
+export SL_FLINK_API_KEY=$FLINK_API_KEY
+export SL_FLINK_API_SECRET=$FLINK_API_SECRET
+export SL_CONFLUENT_CLOUD_API_KEY=$CONFLUENT_CLOUD_API_KEY
+export SL_CONFLUENT_CLOUD_API_SECRET=$CONFLUENT_CLOUD_API_SECRET
+
+export FLINK_PROJECT=$HOME/Documents/Code/healthcare-shift-left-demo
+export PIPELINES=$FLINK_PROJECT/pipelines
+export CONFIG_FILE=$HOME/Documents/Code/shift_left_utils/src/shift_left/tests/config-ccloud.yaml
+
+export CCLOUD_KAFKA_CLUSTER=$FLINK_DATABASE_NAME
+export CCLOUD_ENV_ID=$FLINK_ENV_ID
+export CCLOUD_ENV_NAME=$FLINK_ENV_NAME
+export CCLOUD_CONTEXT=login-jboyer@confluent.io-https://confluent.cloud
+export CLOUD_PROVIDER=aws
+export CLOUD_REGION=us-west-2
+export CCLOUD_COMPUTE_POOL_ID=$FLINK_COMPUTE_POOL_ID

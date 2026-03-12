@@ -1,0 +1,10 @@
+{
+    "device_metrics": {
+        "table_name": "device_metrics",
+        "product_name": "raw",
+        "type": "unknown-type",
+        "dml_ref": "pipelines/raw/device_metrics/sql-scripts/dml.device_metrics.sql",
+        "ddl_ref": "pipelines/raw/device_metrics/sql-scripts/ddl.device_metrics.sql",
+        "table_folder_name": "pipelines/raw/device_metrics"
+    }
+}

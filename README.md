@@ -3,15 +3,43 @@
 
 ## Goals
 
-The scope will be to build an end-to-end demonstration starting from Debezium CDC to flink SQL to process (Raw->Bronze->Silver->Gold records), with tableflow to s3 parquet/iceberg tables - finalized by using duckdb queries - Use healthcare use case, like Patient records, health provider , and device monitoring. Address Compliance to a prescription, i=or out of sequence events. We could use Flink to compare Command/Intent (The Prescription) against Reality (The Telemetry). audiance will be data engineers. demo user friendly platform to develop SQL streaming logic.  May be use HL7 FHIR.
+The scope will be to build an end-to-end demonstration starting from Debezium CDC to flink SQL to process (Raw->Bronze->Silver->Gold records), with tableflow to s3 parquet/iceberg tables 
+- finalized by using duckdb queries 
+- Use healthcare use case, like Patient records, health provider , and device monitoring. Address Compliance to a prescription, or out of sequence events. We could use Flink to compare Command/Intent (The Prescription) against Reality (The Telemetry). 
+- Audiance is data engineers. 
+- May be use HL7 FHIR.
 
+### Pipelines Architecture
+
+The figure should be self-explanatory
+
+![](./docs/pipeline-view.drawio.png)
+
+### Running the device generator
+
+From the repo root, start the device telemetry producer (FastAPI + Kafka producer) with Docker Compose:
+
+```bash
+# Set Confluent Cloud Kafka and Schema Registry credentials (see producers/device-generator/.env.example)
+cp producers/device-generator/.env.example producers/device-generator/.env
+# edit producers/device-generator/.env
+
+docker compose up -d device-generator
+```
+
+API: `http://localhost:8000` (health, simulation start/stop, SSE stream at `/telemetry/stream`).
 
 
 ## The Core Domain Classes
 
-You typically need three main entities to show a meaningful "Patient Journey" in a stream: the Patient, the Provider, and the Encounter (the event linking them).
+You typically need some main entities to show a meaningful "Patient Journey" in a stream: the Patient, the Provider, the Medical device and the Prescription. We want to measure drift. CPAPs/Ventilators-style devices, prescription drift can indicate:
+
+* Mask Leak: If the pressure required to maintain airflow increases significantly, the mask may be fitted poorly.
+* Patient Condition Change: If the patient's airway resistance changes, the device may no longer be providing effective therapy at the original prescribed level.
+* Mechanical Wear: The motor may be failing to reach the target RPMs required for the prescribed pressure.
 
 ### A. Patient Class
+
 This represents the static/slow-moving dimensions of the person.
 
 ```Java
@@ -28,7 +56,7 @@ public class Patient {
 ```
 
 ### B. HealthProvider Class
-This represents the doctor or facility.
+This represents the doctor.
 
 ```Java
 public class HealthProvider {
@@ -68,6 +96,7 @@ public class Prescription {
     public String patientId;
     public String deviceId;
     public String medicationOrTherapy; // e.g., "CPAP Oxygen Flow"
+    public String metricName;
     public double targetValue;          // e.g., 2.5 (Liters per minute)
     public double toleranceRange;      // e.g., 0.5 (Acceptable +/-)
     public long startDate;
@@ -85,7 +114,7 @@ public class DeviceTelemetry {
     public String deviceId;
     public String patientId;
     public long timestamp;
-    public String metricName;          // e.g., "FlowRate", "BatteryLevel", "Pressure"
+    public String metricName;          // e.g.,"Pressure"
     public double metricValue;
     public String softwareVersion;     // Crucial for manufacturers (debugging)
     
@@ -93,6 +122,16 @@ public class DeviceTelemetry {
 }
 ```
 
+### F. Drift Alert
+```java
+public class DriftAlert {
+    public String deviceId;
+    public String patientId;
+    public String message;
+    public double prescribedValue;
+    public double actualValue;
+}
+```
 ## The Flink Use Case
 
 ### Compliance Alerting
