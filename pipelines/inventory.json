@@ -6,5 +6,53 @@
         "dml_ref": "pipelines/raw/device_metrics/sql-scripts/dml.device_metrics.sql",
         "ddl_ref": "pipelines/raw/device_metrics/sql-scripts/ddl.device_metrics.sql",
         "table_folder_name": "pipelines/raw/device_metrics"
+    },
+    "raw_devices": {
+        "table_name": "raw_devices",
+        "product_name": "raw",
+        "type": "unknown-type",
+        "dml_ref": "pipelines/raw/raw_devices/sql-scripts/dml.raw_devices.sql",
+        "ddl_ref": "pipelines/raw/raw_devices/sql-scripts/ddl.raw_devices.sql",
+        "table_folder_name": "pipelines/raw/raw_devices"
+    },
+    "raw_patients": {
+        "table_name": "raw_patients",
+        "product_name": "raw",
+        "type": "unknown-type",
+        "dml_ref": "pipelines/raw/raw_patients/sql-scripts/dml.raw_patients.sql",
+        "ddl_ref": "pipelines/raw/raw_patients/sql-scripts/ddl.raw_patients.sql",
+        "table_folder_name": "pipelines/raw/raw_patients"
+    },
+    "raw_prescriptions": {
+        "table_name": "raw_prescriptions",
+        "product_name": "raw",
+        "type": "unknown-type",
+        "dml_ref": "pipelines/raw/raw_prescriptions/sql-scripts/dml.raw_prescriptions.sql",
+        "ddl_ref": "pipelines/raw/raw_prescriptions/sql-scripts/ddl.raw_prescriptions.sql",
+        "table_folder_name": "pipelines/raw/raw_prescriptions"
+    },
+    "src_devices": {
+        "table_name": "src_devices",
+        "product_name": "rmd",
+        "type": "unknown-type",
+        "dml_ref": "pipelines/rmd/src_devices/sql-scripts/dml.src_devices.properties",
+        "ddl_ref": "pipelines/rmd/src_devices/sql-scripts/ddl.src_devices.sql",
+        "table_folder_name": "pipelines/rmd/src_devices"
+    },
+    "src_patients": {
+        "table_name": "src_patients",
+        "product_name": "rmd",
+        "type": "unknown-type",
+        "dml_ref": "pipelines/rmd/src_patients/sql-scripts/dml.src_patients.sql",
+        "ddl_ref": "pipelines/rmd/src_patients/sql-scripts/ddl.src_patients.sql",
+        "table_folder_name": "pipelines/rmd/src_patients"
+    },
+    "src_prescriptions": {
+        "table_name": "src_prescriptions",
+        "product_name": "rmd",
+        "type": "unknown-type",
+        "dml_ref": "pipelines/rmd/src_prescriptions/sql-scripts/dml.src_prescriptions.properties",
+        "ddl_ref": "pipelines/rmd/src_prescriptions/sql-scripts/ddl.src_prescriptions.sql",
+        "table_folder_name": "pipelines/rmd/src_prescriptions"
     }
 }

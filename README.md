@@ -15,6 +15,11 @@ The figure should be self-explanatory
 
 ![](./docs/pipeline-view.drawio.png)
 
+### Demonstration Components
+
+![](./docs/demo_components.drawio.png)
+
+
 ### Running the device generator
 
 From the repo root, start the device telemetry producer (FastAPI + Kafka producer) with Docker Compose:
@@ -52,6 +57,18 @@ public class Patient {
     
     // Default constructor for Flink/POJO serialization
     public Patient() {}
+}
+```
+
+The Patient may have a device assigned to.
+
+```java
+public class Device {
+   public String device_id;
+   public String patientId;
+   public double preassureSetting;
+   public double flowRateSetting;
+   public int flowLevel;
 }
 ```
 
