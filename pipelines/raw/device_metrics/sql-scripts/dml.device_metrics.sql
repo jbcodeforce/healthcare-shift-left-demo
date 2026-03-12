@@ -1,7 +1,6 @@
 -- Foundation test data: 5 patients, 1 device per patient, 3 metrics each (Pressure, FlowRate, MotorSpeed)
 INSERT INTO `device_metrics` (device_id, patient_id, ts, metric_name, metric_value, software_version)
-SELECT device_id, patient_id, ts, metric_name, metric_value, software_version
-FROM (VALUES
+(VALUES
   ('DEV-P001', 'P001', 1710000000000, 'Pressure',    10.5, '1.2.0'),
   ('DEV-P001', 'P001', 1710000000000, 'FlowRate',     2.5, '1.2.0'),
   ('DEV-P001', 'P001', 1710000000000, 'MotorSpeed', 3200.0, '1.2.0'),

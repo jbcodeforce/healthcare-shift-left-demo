@@ -6,20 +6,13 @@ import pytest
 
 from device_generator.producer import flush_producer, init_producer, produce_device_metric
 from device_generator.simulation import is_simulation_running, stop_simulation
-
+from device_generator.schema import DeviceMetricsValue
 from ..conftest import requires_kafka
 
 
-def _one_sample_record() -> dict:
+def _one_sample_record() -> DeviceMetricsValue:
     """Single device-metric record matching the Avro schema."""
-    return {
-        "device_id": "DEV-INTTEST",
-        "patient_id": "P999",
-        "ts": int(time.time() * 1000),
-        "metric_name": "Pressure",
-        "metric_value": 10.5,
-        "software_version": "test-1.0",
-    }
+    return DeviceMetricsValue(device_id="device_1", patient_id="patient_1", ts=1715404800000, metric_name="metric_1", metric_value=1.0, software_version="1.0.0")
 
 
 @requires_kafka

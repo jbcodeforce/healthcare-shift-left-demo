@@ -9,7 +9,7 @@ from typing import Any
 
 from device_generator.config import get_settings
 from device_generator.producer import init_producer, produce_device_metric
-
+from device_generator.schema import DeviceMetricsValue
 logger = logging.getLogger(__name__)
 
 SimulationType = str  # "all" | "single"
@@ -58,14 +58,7 @@ def _one_record(patient_id: str, ts_ms: int, software_version: str = "1.2.0") ->
     records = []
     for metric_name, base, jitter in _base_metrics():
         value = base + random.uniform(-jitter, jitter)
-        records.append({
-            "device_id": device_id,
-            "patient_id": patient_id,
-            "ts": ts_ms,
-            "metric_name": metric_name,
-            "metric_value": round(value, 4),
-            "software_version": software_version,
-        })
+        records.append(DeviceMetricsValue(device_id, patient_id, ts_ms, metric_name, value, software_version))
     return records
 
 
