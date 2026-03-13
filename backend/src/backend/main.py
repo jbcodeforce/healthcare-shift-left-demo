@@ -13,6 +13,16 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, model_validator
 
 from backend.data import get_devices, get_patients, get_prescriptions
+from backend.db import (
+    count_prescriptions,
+    create_prescription,
+    delete_prescription,
+    ensure_prescriptions_table,
+    get_prescription_by_id,
+    get_prescriptions_from_db,
+    seed_prescriptions,
+    update_prescription,
+)
 from backend.simulation import (
     is_simulation_running,
     set_telemetry_sink,
@@ -53,6 +63,17 @@ async def lifespan(app: FastAPI):
     _sse_subscribers_lock = asyncio.Lock()
     set_telemetry_sink(_telemetry_queue)
     task = asyncio.create_task(_broadcast_telemetry())
+    # Seed prescriptions table if PostgreSQL is configured and empty
+    try:
+        ensure_prescriptions_table()
+        n = count_prescriptions()
+        if n == 0:
+            seed_prescriptions(get_prescriptions())
+            logger.info("Seeded one prescription per patient to PostgreSQL")
+        elif n > 0:
+            logger.info("Prescriptions table already has %d rows", n)
+    except Exception as e:
+        logger.debug("Prescriptions seed skipped or failed: %s", e)
     yield
     task.cancel()
     try:
@@ -92,8 +113,118 @@ def list_devices() -> list[dict]:
 
 @app.get("/prescriptions")
 def list_prescriptions() -> list[dict]:
-    """List prescriptions (demo data aligned with simulation)."""
+    """List prescriptions from PostgreSQL if configured, else in-memory demo data."""
+    rows = get_prescriptions_from_db()
+    if rows is not None:
+        return rows
     return get_prescriptions()
+
+
+def _prescriptions_db_required():
+    """Raise 503 if prescriptions are not backed by DB (CRUD not available)."""
+    if get_prescriptions_from_db() is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Prescriptions CRUD requires PostgreSQL; configure DATABASE_URL.",
+        )
+
+
+class PrescriptionParameter(BaseModel):
+    parameter_name: str
+    parameter_value: float
+    parameter_type: str = "float"
+    parameter_tolerance: float
+
+
+class PrescriptionCreate(BaseModel):
+    prescription_id: str | None = None
+    patient_id: str
+    device_id: str
+    medication_or_therapy: str | None = None
+    start_date: int | None = None
+    end_date: int | None = None
+    parameters: str | list[PrescriptionParameter] = "[]"
+
+    def to_row(self) -> dict:
+        params = self.parameters
+        if isinstance(params, list):
+            params = json.dumps([p.model_dump() for p in params])
+        return {
+            "prescriptionId": self.prescription_id,
+            "patientId": self.patient_id,
+            "deviceId": self.device_id,
+            "medicationOrTherapy": self.medication_or_therapy or "",
+            "startDate": self.start_date,
+            "endDate": self.end_date,
+            "parameters": params,
+        }
+
+
+class PrescriptionUpdate(BaseModel):
+    patient_id: str | None = None
+    device_id: str | None = None
+    medication_or_therapy: str | None = None
+    start_date: int | None = None
+    end_date: int | None = None
+    parameters: str | list[PrescriptionParameter] | None = None
+
+    def to_row(self) -> dict:
+        row: dict = {}
+        if self.patient_id is not None:
+            row["patientId"] = self.patient_id
+        if self.device_id is not None:
+            row["deviceId"] = self.device_id
+        if self.medication_or_therapy is not None:
+            row["medicationOrTherapy"] = self.medication_or_therapy
+        if self.start_date is not None:
+            row["startDate"] = self.start_date
+        if self.end_date is not None:
+            row["endDate"] = self.end_date
+        if self.parameters is not None:
+            if isinstance(self.parameters, list):
+                row["parameters"] = json.dumps([p.model_dump() if hasattr(p, "model_dump") else p for p in self.parameters])
+            else:
+                row["parameters"] = self.parameters
+        return row
+
+
+@app.get("/prescriptions/{prescription_id}")
+def get_prescription(prescription_id: str) -> dict:
+    """Get one prescription by ID. Requires PostgreSQL."""
+    _prescriptions_db_required()
+    row = get_prescription_by_id(prescription_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Prescription not found")
+    return row
+
+
+@app.post("/prescriptions")
+def create_prescription_endpoint(body: PrescriptionCreate) -> dict:
+    """Create a new prescription. Requires PostgreSQL."""
+    _prescriptions_db_required()
+    row = create_prescription(body.to_row())
+    if row is None:
+        raise HTTPException(status_code=409, detail="Create failed (e.g. duplicate prescription_id)")
+    return row
+
+
+@app.put("/prescriptions/{prescription_id}")
+def update_prescription_endpoint(prescription_id: str, body: PrescriptionUpdate) -> dict:
+    """Update a prescription by ID. Requires PostgreSQL."""
+    _prescriptions_db_required()
+    row = update_prescription(prescription_id, body.to_row())
+    if row is None:
+        raise HTTPException(status_code=404, detail="Prescription not found")
+    return row
+
+
+@app.delete("/prescriptions/{prescription_id}")
+def delete_prescription_endpoint(prescription_id: str) -> dict:
+    """Delete a prescription by ID. Requires PostgreSQL."""
+    _prescriptions_db_required()
+    if not delete_prescription(prescription_id):
+        raise HTTPException(status_code=404, detail="Prescription not found")
+    return {"status": "deleted", "prescriptionId": prescription_id}
 
 
 # ---------- Simulation (existing) ----------

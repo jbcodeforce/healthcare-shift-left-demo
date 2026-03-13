@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS src_patients (
+CREATE TABLE IF NOT EXISTS hc_src_patients (
   patient_id   STRING NOT NULL COMMENT 'Primary key',
   name         STRING COMMENT 'Patient name',
   gender       STRING COMMENT 'Gender',

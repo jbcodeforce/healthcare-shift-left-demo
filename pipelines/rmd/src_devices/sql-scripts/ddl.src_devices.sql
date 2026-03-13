@@ -1,6 +1,10 @@
-CREATE TABLE IF NOT EXISTS src_devices (
+CREATE TABLE IF NOT EXISTS hc_src_devices (
   device_id          STRING NOT NULL COMMENT 'Primary key',
   patient_id         STRING COMMENT 'Patient identifier',
+  model_type         STRING COMMENT 'Model type',
+  manufacturer       STRING COMMENT 'Manufacturer',
+  serial_number      STRING COMMENT 'Serial number',
+  software_version   STRING COMMENT 'Software version',
   pressure_setting   DOUBLE COMMENT 'Pressure setting',
   flow_rate_setting  DOUBLE COMMENT 'Flow rate setting',
   flow_level         INT COMMENT 'Flow level',

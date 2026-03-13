@@ -107,18 +107,5 @@ For pipeline architecture and component diagrams, see the main **README** in the
 
 ## Demo Components (Diagram)
 
-<<<<<<< HEAD
-The components involved in the demonstration are:
-- Backend: REST API and telemetry producer
-- Frontend: Vue.js control plane
-- Kafka: Confluent Cloud Kafka
-- Schema Registry: Confluent Cloud Schema Registry
-- SSE: Server-Sent Events
-- Vue.js: Vue.js control plane
-- Vue.js: Vue.js control plane
-=======
-Place a \`demo_components.png\` (or similar) in \`frontend/public/demo/\` to show the component diagram here:
-
->>>>>>> 0e0addfe9fd8f56eee2a9ed8472e160859466c6c
 ![Demo components](/demo/demo_components.png)
 `

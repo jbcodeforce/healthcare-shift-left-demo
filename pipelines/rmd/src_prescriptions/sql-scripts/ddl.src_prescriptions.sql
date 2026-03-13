@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS src_prescriptions (
+CREATE TABLE IF NOT EXISTS hc_src_prescriptions (
   prescription_id       STRING NOT NULL COMMENT 'Primary key',
   patient_id            STRING COMMENT 'Patient identifier',
   device_id             STRING COMMENT 'Device identifier',

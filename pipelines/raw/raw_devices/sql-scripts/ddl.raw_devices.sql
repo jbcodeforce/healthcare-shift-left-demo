@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS raw_devices (
+CREATE TABLE IF NOT EXISTS hc_raw_devices (
   device_id          STRING NOT NULL COMMENT 'Primary key',
   model_type         STRING COMMENT 'Model type',
   manufacturer       STRING COMMENT 'Manufacturer',

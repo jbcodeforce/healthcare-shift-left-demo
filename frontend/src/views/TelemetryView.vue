@@ -194,12 +194,8 @@ button:disabled {
 }
 button.active {
   background: var(--accent-bg);
-<<<<<<< HEAD
   border-color: var(--accent-border);
   color: var(--accent);
-=======
-  border-color: var(--accent);
->>>>>>> 0e0addfe9fd8f56eee2a9ed8472e160859466c6c
 }
 .telemetry-list {
   margin-top: 0.75rem;

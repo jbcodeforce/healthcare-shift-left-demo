@@ -1,6 +1,6 @@
 -- Debezium CDC raw layer: envelope with before/after as ROW (schema from src_prescriptions).
 -- before/after have the same structure as src_prescriptions; null for INSERT (before) or DELETE (after).
-CREATE TABLE IF NOT EXISTS raw_prescriptions (
+CREATE TABLE IF NOT EXISTS hc_raw_prescriptions (
   prescription_id STRING NOT NULL COMMENT 'Source primary key (from Debezium key)',
   before ROW(
     prescription_id       STRING,

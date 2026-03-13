@@ -20,8 +20,13 @@ The figure should be self-explanatory
 ![](./docs/demo_components.drawio.png)
 
 
-### Running the demo backend
+## Running the demo backend
 
+### Pre-requisites
+
+* get docker and docker compose
+
+### Backend
 The **backend** is the demo API and telemetry producer: REST endpoints for patients, devices, and prescriptions, plus simulation control and telemetry SSE.
 
 From the repo root, start the backend with Docker Compose:
@@ -47,6 +52,25 @@ npm run dev
 ```
 
 The app expects the backend API at `http://localhost:8000` by default. Override with `VITE_API_URL` (e.g. in `frontend/.env`). The control plane fetches patients, devices, and prescriptions from the backend and lets you start/stop the device simulation and connect to the live telemetry SSE stream.
+
+### Kafka Connect and Debezium
+
+**Kafka Connect** runs in the same Docker Compose stack and streams **PostgreSQL CDC** (change data capture) to **Confluent Cloud Kafka** using the **Debezium PostgreSQL** connector. It uses the same Confluent credentials as the backend (Kafka bootstrap servers, API key/secret as `KAFKA_SASL_USERNAME`/`KAFKA_SASL_PASSWORD`, and Schema Registry). No local Kafka broker is required.
+
+1. **Start Connect** (after `backend/.env` is set with Confluent and Postgres vars). So that Compose can substitute Kafka/Schema Registry variables, use the backend env file:
+   ```bash
+   docker compose --env-file backend/.env up -d kafka-connect
+   ```
+   Or run `docker compose up -d kafka-connect` from the repo root if your shell or a root `.env` already exports `KAFKA_BOOTSTRAP_SERVERS`, `KAFKA_SASL_USERNAME`, `KAFKA_SASL_PASSWORD`, `SCHEMA_REGISTRY_URL`, and `SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO`.
+2. **Register the Debezium connector** (idempotent; run from repo root):
+   ```bash
+   ./connect/register-connector.sh
+   ```
+   Optionally set `CONNECT_URL=http://localhost:8083` if Connect runs elsewhere. The script sources `backend/.env` for `POSTGRES_USER` and `POSTGRES_PASSWORD` and creates the connector `debezium-postgres-healthcare` if missing.
+3. **Check connector status**: `curl -s http://localhost:8083/connectors/debezium-postgres-healthcare/status | jq .`
+4. **Topic names**: Debezium writes to Confluent Cloud topics with prefix `healthcare`. The `prescriptions` table is captured as `healthcare.public.prescriptions` (or `healthcare.healthcare.prescriptions` depending on schema). Use these topic names in Flink or pipeline config.
+
+**Postgres**: The Compose Postgres service is started with `wal_level=logical` for logical decoding. An init script grants `REPLICATION` to the app user so Debezium can create replication slots. If the database was created before adding this setup, run once: `ALTER USER demo WITH REPLICATION;` (or your `POSTGRES_USER`) inside Postgres.
 
 ## The Core Domain Classes
 

@@ -16,38 +16,33 @@ export const mockDevices = [
   { device_id: 'DEV-P005', patientId: 'P005', pressureSetting: 9.5, flowRateSetting: 2.3, flowLevel: 3 },
 ]
 
+/** One prescription per device; parameters = JSON string of array of { parameter_name, parameter_value, parameter_type, parameter_tolerance }. */
 export const mockPrescriptions = [
   {
-    prescriptionId: 'RX001',
+    prescriptionId: 'RX-DEV-P001',
     patientId: 'P001',
     deviceId: 'DEV-P001',
     medicationOrTherapy: 'CPAP Oxygen Flow',
-    metricName: 'Pressure',
-    targetValue: 10.0,
-    toleranceRange: 1.0,
     startDate: 1710000000000,
     endDate: 1741536000000,
+    parameters: '[{"parameter_name":"Pressure","parameter_value":10,"parameter_type":"float","parameter_tolerance":1},{"parameter_name":"FlowRate","parameter_value":2.5,"parameter_type":"float","parameter_tolerance":0.5},{"parameter_name":"MotorSpeed","parameter_value":3200,"parameter_type":"float","parameter_tolerance":150}]',
   },
   {
-    prescriptionId: 'RX002',
+    prescriptionId: 'RX-DEV-P002',
     patientId: 'P002',
     deviceId: 'DEV-P002',
     medicationOrTherapy: 'CPAP Oxygen Flow',
-    metricName: 'FlowRate',
-    targetValue: 2.5,
-    toleranceRange: 0.5,
     startDate: 1710000000000,
     endDate: 1741536000000,
+    parameters: '[{"parameter_name":"Pressure","parameter_value":12,"parameter_type":"float","parameter_tolerance":1},{"parameter_name":"FlowRate","parameter_value":2.8,"parameter_type":"float","parameter_tolerance":0.5},{"parameter_name":"MotorSpeed","parameter_value":3200,"parameter_type":"float","parameter_tolerance":150}]',
   },
   {
-    prescriptionId: 'RX003',
+    prescriptionId: 'RX-DEV-P003',
     patientId: 'P003',
     deviceId: 'DEV-P003',
     medicationOrTherapy: 'CPAP Oxygen Flow',
-    metricName: 'Pressure',
-    targetValue: 8.0,
-    toleranceRange: 0.8,
     startDate: 1710000000000,
     endDate: 1741536000000,
+    parameters: '[{"parameter_name":"Pressure","parameter_value":8,"parameter_type":"float","parameter_tolerance":1},{"parameter_name":"FlowRate","parameter_value":2,"parameter_type":"float","parameter_tolerance":0.5},{"parameter_name":"MotorSpeed","parameter_value":3200,"parameter_type":"float","parameter_tolerance":150}]',
   },
 ]

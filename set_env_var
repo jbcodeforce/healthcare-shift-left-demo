@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Load ./backend/.env and export all variables into the current shell.
+BACKEND_ENV="./backend/.env"
+if [[ -r "$BACKEND_ENV" ]]; then
+  set -a
+  # shellcheck source=/dev/null
+  source "$BACKEND_ENV"
+  set +a
+  echo "Loaded env from $BACKEND_ENV"
+else
+  echo "Not found or not readable: $BACKEND_ENV" >&2
+  return 1 2>/dev/null || exit 1
+fi

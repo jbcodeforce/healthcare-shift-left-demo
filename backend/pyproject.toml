@@ -9,6 +9,7 @@ dependencies = [
     "uvicorn[standard]>=0.32.0",
     "confluent-kafka[avro]>=2.3.0",
     "pydantic-settings>=2.0.0",
+    "psycopg[binary]>=3.1.0",
 ]
 
 [project.optional-dependencies]
@@ -32,9 +33,5 @@ packages = ["src/backend"]
 testpaths = ["tests"]
 pythonpath = ["src"]
 markers = [
-<<<<<<< HEAD
-    "integration: integration tests (require KAFKA_BOOTSTRAP_SERVERS and Confluent credentials)",
-=======
-    "integration: integration tests (require KAFKA and Confluent credentials)",
->>>>>>> 0e0addfe9fd8f56eee2a9ed8472e160859466c6c
+    "integration: integration tests (require KAFKA_BOOTSTRAP_SERVERS and Confluent credentials)"
 ]

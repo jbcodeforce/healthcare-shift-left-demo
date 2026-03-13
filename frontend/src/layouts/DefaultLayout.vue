@@ -72,11 +72,7 @@ import { RouterLink, RouterView } from 'vue-router'
 
 .nav-link:hover {
   background: var(--accent-bg);
-<<<<<<< HEAD
   color: var(--accent);
-=======
-  color: var(--text-h);
->>>>>>> 0e0addfe9fd8f56eee2a9ed8472e160859466c6c
 }
 
 .nav-link-active {

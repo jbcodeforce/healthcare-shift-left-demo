@@ -1,0 +1,14 @@
+{
+  "name": "debezium-postgres-healthcare",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "__POSTGRES_USER__",
+    "database.password": "__POSTGRES_PASSWORD__",
+    "database.dbname": "healthcare",
+    "topic.prefix": "healthcare",
+    "table.include.list": "public.prescriptions",
+    "plugin.name": "pgoutput"
+  }
+}

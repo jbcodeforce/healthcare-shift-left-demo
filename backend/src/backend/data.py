@@ -1,5 +1,6 @@
 """Demo data for patients, devices, and prescriptions. Aligned with simulation IDs and README domain."""
 
+import json
 from backend.config import get_settings
 
 
@@ -60,8 +61,10 @@ def get_devices() -> list[dict]:
 
 
 def get_prescriptions() -> list[dict]:
-    """Return list of prescriptions (one per device) aligned with README Prescription."""
+    """Return one prescription per patient; parameters as JSON string (array of parameter_name, value, type, tolerance)."""
+    patients = get_patients()
     devices = get_devices()
+    device_by_patient = {d["patientId"]: d for d in devices}
     base_ts = 1710000000000
     end_ts = 1741536000000
     metrics = [
@@ -70,18 +73,27 @@ def get_prescriptions() -> list[dict]:
         ("MotorSpeed", None, 150.0),
     ]
     out = []
-    for d in devices:
-        for i, (metric_name, key, tolerance) in enumerate(metrics):
+    for p in patients:
+        patient_id = p["patientId"]
+        d = device_by_patient.get(patient_id)
+        if not d:
+            continue
+        params = []
+        for metric_name, key, tolerance in metrics:
             target = d[key] if key else 3200.0
-            out.append({
-                "prescriptionId": f"RX-{d['device_id']}-{i}",
-                "patientId": d["patientId"],
-                "deviceId": d["device_id"],
-                "medicationOrTherapy": "CPAP Oxygen Flow",
-                "metricName": metric_name,
-                "targetValue": target,
-                "toleranceRange": tolerance,
-                "startDate": base_ts,
-                "endDate": end_ts,
+            params.append({
+                "parameter_name": metric_name,
+                "parameter_value": target,
+                "parameter_type": "float",
+                "parameter_tolerance": tolerance,
             })
+        out.append({
+            "prescriptionId": f"RX-{d['device_id']}",
+            "patientId": patient_id,
+            "deviceId": d["device_id"],
+            "medicationOrTherapy": "CPAP Oxygen Flow",
+            "startDate": base_ts,
+            "endDate": end_ts,
+            "parameters": json.dumps(params),
+        })
     return out

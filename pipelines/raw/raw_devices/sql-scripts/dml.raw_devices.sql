@@ -1,5 +1,5 @@
 -- Foundation test data: 5 patients P001–P005, 1 device per patient
-INSERT INTO raw_devices (
+INSERT INTO hc_raw_devices (
   device_id, model_type, manufacturer, serial_number, software_version,
   created_at, updated_at, patient_id, pressure_setting, flow_rate_setting, flow_level
 )

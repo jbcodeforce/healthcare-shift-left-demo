@@ -1,0 +1,26 @@
+# Kafka Connect worker config (reference).
+# The running worker is configured via environment variables in docker-compose.yml.
+# This file documents the equivalent Confluent Cloud + Schema Registry settings.
+
+bootstrap.servers=${KAFKA_BOOTSTRAP_SERVERS}
+group.id=healthcare-connect
+config.storage.topic=connect-configs
+offset.storage.topic=connect-offsets
+status.storage.topic=connect-status
+config.storage.replication.factor=1
+offset.storage.replication.factor=1
+status.storage.replication.factor=1
+
+key.converter=io.confluent.connect.avro.AvroConverter
+value.converter=io.confluent.connect.avro.AvroConverter
+key.converter.schema.registry.url=${SCHEMA_REGISTRY_URL}
+value.converter.schema.registry.url=${SCHEMA_REGISTRY_URL}
+key.converter.schema.registry.basic.auth.user.info=${SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO}
+value.converter.schema.registry.basic.auth.user.info=${SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO}
+
+security.protocol=SASL_SSL
+sasl.mechanism=PLAIN
+sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="<API_KEY>" password="<API_SECRET>";
+
+internal.key.converter=org.apache.kafka.connect.json.JsonConverter
+internal.value.converter=org.apache.kafka.connect.json.JsonConverter

@@ -1,5 +1,5 @@
 -- Foundation test data: 5 patients P001–P005 (CDC create events: before=null, after=JSON payload, op='c')
-INSERT INTO raw_patients (patient_id, before, after, op, source_ts_ms)
+INSERT INTO hc_raw_patients (patient_id, before, after, op, source_ts_ms)
 SELECT patient_id, before, after, op, source_ts_ms
 FROM (VALUES
   ('P001', CAST(NULL AS STRING), '{"patient_id":"P001","name":"Alice Smith","gender":"F","birth_date":"1980-05-15","zip_code":"15201"}', 'c', 1710000000000),

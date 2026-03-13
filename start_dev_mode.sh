@@ -35,6 +35,7 @@ cleanup() {
     if [ -n "$FRONTEND_PID" ]; then
         kill $FRONTEND_PID 2>/dev/null && echo -e "${GREEN}Frontend stopped${NC}"
     fi
+    docker compose down
     exit 0
 }
 
@@ -74,6 +75,7 @@ start_backend() {
     echo -e "  Config: $CONFIG_FILE"
     
     cd "$BACKEND_DIR"
+    export DATABASE_URL=postgresql://${POSTGRES_USER:-demo}:${POSTGRES_PASSWORD:-demo}@localhost:5432/${POSTGRES_DB:-healthcare}
     
     # Run uvicorn from workspace directory so relative paths in config.yaml work
     uv run uvicorn backend.main:app --host 0.0.0.0 --port 8000 &
@@ -120,8 +122,17 @@ start_frontend() {
     done
 }
 
+start_postgres() {
+    echo -e "\n${GREEN}Starting PostgreSQL...${NC}"
+    echo -e "  Port: 5432"
+    echo -e "  Config: $POSTGRES_CONFIG_FILE"
+    
+    docker compose up postgres -d
+}
+
 # Main execution
 check_requirements
+start_postgres
 start_backend
 start_frontend
 LAN_IP=""
@@ -137,11 +148,11 @@ echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━�
 echo -e ""
 if [ -n "$LAN_IP" ]; then
   echo -e "  ${YELLOW}On your WiFi (other devices):${NC}"
-  echo -e "    App:        http://${LAN_IP}:3000"
+  echo -e "    App:        http://${LAN_IP}:5173"
   echo -e "    Backend:    http://${LAN_IP}:8000"
 fi
 
-echo -e "  ${YELLOW}Frontend:${NC}       http://localhost:3000"
+echo -e "  ${YELLOW}Frontend:${NC}       http://localhost:5173"
 echo -e "  ${YELLOW}Backend:${NC}        http://localhost:8000"
 echo -e "  ${YELLOW}API Docs:${NC}       http://localhost:8000/docs"
 echo -e ""
