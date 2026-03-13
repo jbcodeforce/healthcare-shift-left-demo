@@ -15,11 +15,11 @@ The audiance of this demonstration is data engineers to understand the art of fe
 
 The figure below presents the Data pipeline from processing raw data to solver or gold records.
 
-![](./docs/pipeline-view.drawio.png)
+![](./docs/images/pipeline-view.drawio.png)
 
 ### Demonstration Components
 
-![](./docs/demo_components.drawio.png)
+![](./docs/images/demo_components.drawio.png)
 
 
 ## Features

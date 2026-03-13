@@ -7,10 +7,10 @@ group.id=healthcare-connect
 config.storage.topic=connect-configs
 offset.storage.topic=connect-offsets
 status.storage.topic=connect-status
-config.storage.replication.factor=1
-offset.storage.replication.factor=1
-status.storage.replication.factor=1
-
+config.storage.replication.factor=3
+offset.storage.replication.factor=3
+status.storage.replication.factor=3
+topic.creation.enable=true
 key.converter=io.confluent.connect.avro.AvroConverter
 value.converter=io.confluent.connect.avro.AvroConverter
 key.converter.schema.registry.url=${SCHEMA_REGISTRY_URL}

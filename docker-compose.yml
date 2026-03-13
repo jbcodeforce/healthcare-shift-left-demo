@@ -84,15 +84,27 @@ services:
       CONNECT_CONFIG_STORAGE_TOPIC: connect-configs
       CONNECT_OFFSET_STORAGE_TOPIC: connect-offsets
       CONNECT_STATUS_STORAGE_TOPIC: connect-status
-      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: "1"
-      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: "1"
-      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_TOPIC_CREATION_ENABLE: true
+      # Confluent Cloud typically requires replication factor 3 for new topics
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: "3"
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: "3"
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: "3"
       CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
       CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
       CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: ${SCHEMA_REGISTRY_URL}
       CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: ${SCHEMA_REGISTRY_URL}
-      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO: ${SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO}
-      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO: ${SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO}
+      # Subject name at converter level (same as backend producer: ":{prefix}:{topic}-key"). Uses custom PrefixTopicNameStrategy.
+      CONNECT_KEY_CONVERTER_KEY_SUBJECT_NAME_STRATEGY: io.confluent.kafka.serializers.subject.PrefixTopicNameStrategy
+      CONNECT_VALUE_CONVERTER_VALUE_SUBJECT_NAME_STRATEGY: io.confluent.kafka.serializers.subject.PrefixTopicNameStrategy
+      CONNECT_KEY_CONVERTER_SUBJECT_NAME_PREFIX: "${SCHEMA_SUBJECT_PREFIX:-.flink-dev}"
+      CONNECT_VALUE_CONVERTER_SUBJECT_NAME_PREFIX: "${SCHEMA_SUBJECT_PREFIX:-.flink-dev}"
+      # Optional: non-default schema context via URL (entrypoint appends /contexts/<context> when set)
+      SCHEMA_REGISTRY_CONTEXT: ${SCHEMA_REGISTRY_CONTEXT:-}
+      # Required so the Avro converter actually uses the credentials (otherwise 401 when registering schemas)
+      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_BASIC_AUTH_CREDENTIALS_SOURCE: USER_INFO
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_BASIC_AUTH_CREDENTIALS_SOURCE: USER_INFO
+      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO: "${SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO}"
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO: "${SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO}"
       CONNECT_SECURITY_PROTOCOL: SASL_SSL
       CONNECT_SASL_MECHANISM: PLAIN
       CONNECT_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="${KAFKA_SASL_USERNAME}" password="${KAFKA_SASL_PASSWORD}";'
@@ -104,7 +116,11 @@ services:
       CONNECT_CONSUMER_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="${KAFKA_SASL_USERNAME}" password="${KAFKA_SASL_PASSWORD}";'
       CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      # Bind REST API to all interfaces so it is reachable on host port 8083
+      CONNECT_LISTENERS: "http://0.0.0.0:8083"
+      CONNECT_REST_PORT: "8083"
       CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
+      CONNECT_REST_ADVERTISED_PORT: "8083"
     depends_on:
       postgres:
         condition: service_healthy

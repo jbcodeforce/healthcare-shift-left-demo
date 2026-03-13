@@ -15,9 +15,9 @@ def _short_id(length: int = 4) -> str:
 
 logger = logging.getLogger(__name__)
 
-PRESCRIPTIONS_TABLE = """
-DROP TABLE IF EXISTS prescriptions;
-CREATE TABLE prescriptions (
+# DDL used when the table does not exist. Do not DROP so Debezium publication is not broken.
+PRESCRIPTIONS_TABLE_CREATE = """
+CREATE TABLE IF NOT EXISTS prescriptions (
     id SERIAL PRIMARY KEY,
     prescription_id VARCHAR(128) NOT NULL UNIQUE,
     patient_id VARCHAR(64) NOT NULL,
@@ -45,7 +45,7 @@ def _conn():
 
 def init_prescriptions_table(conn) -> None:
     with conn.cursor() as cur:
-        cur.execute(PRESCRIPTIONS_TABLE)
+        cur.execute(PRESCRIPTIONS_TABLE_CREATE)
     conn.commit()
 
 

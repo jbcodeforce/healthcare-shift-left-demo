@@ -9,6 +9,7 @@ from typing import Literal
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, model_validator
 
@@ -89,6 +90,15 @@ app = FastAPI(
     description="REST API for patients, devices, prescriptions; device telemetry simulation and SSE stream.",
     version="0.1.0",
     lifespan=lifespan,
+)
+
+# CORS so frontend on another origin (e.g. port) can POST; avoids 405 on OPTIONS preflight
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
 )
 
 
@@ -199,7 +209,7 @@ def get_prescription(prescription_id: str) -> dict:
     return row
 
 
-@app.post("/prescriptions")
+@app.post("/prescriptions/")
 def create_prescription_endpoint(body: PrescriptionCreate) -> dict:
     """Create a new prescription. Requires PostgreSQL."""
     _prescriptions_db_required()

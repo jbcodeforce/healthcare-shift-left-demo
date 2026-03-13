@@ -57,7 +57,7 @@ This script:
 5. Starts the **frontend** with `npm run dev` from `frontend/` (Vite on port 5173).
 
 The first time it may take some time as it downloads docker images and builds local kafka connector images.
- 
+
 **URLs:**
 
 | Service       | URL                      |
@@ -141,7 +141,24 @@ Kafka Connect (with the Debezium PostgreSQL connector) streams changes from the 
    curl -s http://localhost:8083/connectors/debezium-postgres-healthcare/status | jq .
    ```
 
-**Connector name:** `debezium-postgres-healthcare`. It uses `database.hostname=postgres` (Docker service name), so Connect must run in the same Compose network as Postgres. The script `connect/register-connector.sh` sources `backend/.env` for `POSTGRES_USER` and `POSTGRES_PASSWORD` and substitutes them into `connect/debezium-postgres.json`.
+**Connector name:** `debezium-postgres-healthcare`. It uses `database.hostname=postgres` (Docker service name), so Connect must run in the same Compose network as Postgres. The script `connect/register-connector.sh` sources `backend/.env` for connector settings (see `connect/README.md`).
+
+**Schema subject prefix (converter level):** The backend producer uses a subject name format `:{prefix}:{topic}-key` (see `backend/src/backend/producer.py` and `schema_subject_prefix` in config). Connect uses the same format via a custom **PrefixTopicNameStrategy** (built in the Connect image from `connect/subject-strategy/`). Set `SCHEMA_SUBJECT_PREFIX` in `backend/.env` (e.g. `.flink-dev`); the default in Compose is `.flink-dev`. The strategy reads the prefix from converter config and, if missing, from the JVM system property `connect.subject.name.prefix` (set by the Connect entrypoint from `SCHEMA_SUBJECT_PREFIX`). After changing the strategy code or prefix, rebuild the Connect image and restart: `docker compose build kafka-connect && docker compose up -d kafka-connect --force-recreate`. Then confirm in Schema Registry that subjects like `:.flink-dev:healthcare.public.prescriptions-key` and `:.flink-dev:healthcare.public.prescriptions-value` exist.
+
+**Schema Registry context via URL (optional):** To use a named context in the Schema Registry URL, set `SCHEMA_REGISTRY_CONTEXT` in `backend/.env`. The Connect entrypoint will then append `/contexts/{context}` to the Schema Registry URL.
+
+**Publication (required for Debezium):** The connector uses the existing publication `debezium_healthcare` for `public.prescriptions`. Postgres init scripts (`postgres/init.d/01-prescriptions-schema.sql` and `02-debezium-replication.sh`) create the table and publication on first start. If you had Postgres running before that, create the publication manually: `docker exec -it postgres psql -U demo -d healthcare -c "CREATE PUBLICATION IF NOT EXISTS debezium_healthcare FOR TABLE public.prescriptions;"`. See `connect/README.md` for full troubleshooting.
+
+**Topic pre-creation:** If the connector logs `UNKNOWN_TOPIC_OR_PARTITION` for `healthcare.public.prescriptions`, create the topic before (or after) starting the connector. With Confluent Cloud CLI: `ccloud kafka topic create healthcare.public.prescriptions --partitions 1`. Or run `./connect/create-topics.sh` (requires `ccloud`). See `connect/README.md` for topic naming.
+
+**Troubleshooting (Connect not visible on port 8083):**
+
+- **Check whether the container is running:** `docker ps -a | grep kafka-connect`. If it is restarting or exited, inspect logs: `docker logs kafka-connect` (or `docker compose logs kafka-connect` from repo root). Common causes: invalid or missing `KAFKA_BOOTSTRAP_SERVERS`, `KAFKA_SASL_USERNAME`, `KAFKA_SASL_PASSWORD`, or Schema Registry URL/auth in `backend/.env`; or Confluent Cloud rejecting creation of Connect internal topics (config/offset/status) with the configured replication factor.
+- **REST API binding:** The Compose file sets `CONNECT_LISTENERS=http://0.0.0.0:8083` and `CONNECT_REST_PORT=8083` so the REST API listens on all interfaces inside the container; port `8083` is mapped to the host. If you changed the port mapping, set `CONNECT_URL` accordingly when calling `register-connector.sh`.
+- **Confluent Cloud:** Internal topics use replication factor `3` by default in this project to match Confluent Cloud expectations. If your cluster has different requirements, adjust `CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR`, `CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR`, and `CONNECT_STATUS_STORAGE_REPLICATION_FACTOR` in `docker-compose.yml`.
+- **Reachability:** From the host, use `curl -s http://localhost:8083/connectors`. If that fails, the container may still be starting (healthcheck allows a 45s start period) or the worker may have crashed—check logs as above.
+
+- **401 Unauthorized when registering Avro schema:** The Connect worker must send Schema Registry credentials when the Avro converter registers schemas. The Compose file sets `CONNECT_*_SCHEMA_REGISTRY_BASIC_AUTH_CREDENTIALS_SOURCE=USER_INFO` so the converter uses the provided user info. Ensure `SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO` in `backend/.env` is the **Schema Registry** API key and secret in the form `key:secret` (Confluent Cloud uses a dedicated Schema Registry API key, not the Kafka cluster API key). If the secret contains colons or special characters, use single quotes in `.env`, e.g. `SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO='sr_key:sr_secret'`. Restart the Connect container after changing `.env`: `docker compose --env-file backend/.env up -d kafka-connect --force-recreate`.
 
 ### Frontend API base URL
 

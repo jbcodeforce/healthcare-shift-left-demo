@@ -10,7 +10,11 @@ BACKEND_DIR="$PROJECT_ROOT/backend"
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
 CONNECT_DIR="$PROJECT_ROOT/connect"
 CONNECT_URL="${CONNECT_URL:-http://localhost:8083}"
-CONNECTOR_NAME="debezium-postgres-healthcare"
+# Connector name (same as connect/register-connector.sh; override via backend/.env DEBEZIUM_CONNECTOR_NAME)
+if [ -f "$BACKEND_DIR/.env" ]; then
+  set -a; source "$BACKEND_DIR/.env" 2>/dev/null; set +a
+fi
+CONNECTOR_NAME="${DEBEZIUM_CONNECTOR_NAME:-debezium-postgres-healthcare}"
 
 
 # Colors for output
@@ -38,6 +42,7 @@ cleanup() {
     if [ -n "$FRONTEND_PID" ]; then
         kill $FRONTEND_PID 2>/dev/null && echo -e "${GREEN}Frontend stopped${NC}"
     fi
+    echo -e "${YELLOW}Stopping Kafka Connect...${NC}"
     docker compose down
     exit 0
 }
