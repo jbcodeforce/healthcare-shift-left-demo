@@ -120,6 +120,16 @@ export async function stopSimulation() {
 }
 
 /**
+ * Fetch last N telemetry records sent to Kafka (for metrics charts).
+ * @returns { Promise<Array<{ device_id, patient_id, ts, metric_name, metric_value, software_version }>> }
+ */
+export async function getTelemetryMetrics() {
+  const res = await fetch(`${apiBase}/telemetry/metrics`)
+  if (!res.ok) throw new Error(`Telemetry metrics failed: ${res.status}`)
+  return res.json()
+}
+
+/**
  * Subscribe to device telemetry SSE stream. Calls onEvent(parsedData) for each "telemetry" event.
  * Returns an abort function to close the stream.
  * @param { (data: object) => void } onEvent

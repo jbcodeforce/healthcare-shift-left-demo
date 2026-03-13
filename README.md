@@ -1,17 +1,19 @@
 # Healthcare Data Streaming Processing Demonstration
 
+Created 03/10/2026 - Updated 
 
 ## Goals
 
-The scope will be to build an end-to-end demonstration starting from Debezium CDC to flink SQL to process (Raw->Bronze->Silver->Gold records), with tableflow to s3 parquet/iceberg tables 
-- finalized by using duckdb queries 
-- Use healthcare use case, like Patient records, health provider , and device monitoring. Address Compliance to a prescription, or out of sequence events. We could use Flink to compare Command/Intent (The Prescription) against Reality (The Telemetry). 
-- Audiance is data engineers. 
-- May be use HL7 FHIR.
+The scope of this repository is to build an end-to-end demonstration starting from Debezium CDC to Confluent Cloud Flink SQL to process (Raw->Bronze->Silver->Gold records), to s3 parquet/iceberg tables.
+
+
+The approach is to use healthcare use case, like Patient records, health provider, prescriptions and device monitoring. Address device monitoring and compliance to a prescription. With the basic domain model but representing good foundations to present different real-time processing use cases. We use Flink to compare Command/Intent (The Prescription) against Reality (The Telemetry). 
+
+The audiance of this demonstration is data engineers to understand the art of feaseable. 
 
 ### Pipelines Architecture
 
-The figure should be self-explanatory
+The figure below presents the Data pipeline from processing raw data to solver or gold records.
 
 ![](./docs/pipeline-view.drawio.png)
 
@@ -20,7 +22,19 @@ The figure should be self-explanatory
 ![](./docs/demo_components.drawio.png)
 
 
+## Features
+
+* **Backend (FastAPI)** — REST API for patients, devices, and prescriptions; health check; device simulation (start/stop, all or single patient); device telemetry streamed via Server-Sent Events (SSE) and produced to Confluent Cloud Kafka (Avro + Schema Registry).
+* **PostgreSQL** — Prescriptions stored in Postgres with logical decoding enabled (`wal_level=logical`) for CDC. One row per prescription; parameters stored as JSON.
+* **Prescriptions CRUD** — Create, read, update, and delete prescriptions via API and frontend. Prescription IDs are generated with a 4-character suffix (e.g. `RX-DEV-P002-a3F9`) to avoid duplicates. Requires PostgreSQL (DATABASE_URL).
+* **Frontend (Vue.js)** — Control plane with navigation: Home, Patients, Devices, Prescriptions, Device telemetry, Demonstration. List views for patients, devices, and prescriptions (grouped by device); “New prescription” form with patient/device dropdowns and parameter rows; delete prescription per row; simulation control; live telemetry SSE stream.
+* **Kafka Connect + Debezium** — Connect runs in Docker Compose; Debezium PostgreSQL connector streams changes from the local `prescriptions` table to Confluent Cloud Kafka (Avro, Schema Registry). Topic prefix `healthcare` (e.g. `healthcare.public.prescriptions`). Register connector with `./connect/register-connector.sh`.
+* **Pipelines** — Flink SQL DDL/DML for raw and RMD layers (e.g. raw_patients, raw_devices, raw_prescriptions, device_metrics). Deploy with shift-left tool to Confluent Cloud Flink.
+
+
 ## Running the demo backend
+
+For developers [see specific instructions](./docs/dev_instructions.md) for running locally, code structure and implementation approaches.
 
 ### Pre-requisites
 

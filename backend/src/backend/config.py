@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     kafka_sasl_password: str = os.getenv("KAFKA_API_SECRET") or model_config.get("kafka_sasl_password")
     kafka_security_protocol: str = "SASL_SSL"
     kafka_sasl_mechanism: str = "PLAIN"
-    kafka_topic: str = "device_metrics"
+    kafka_topic: str = "hc_device_metrics"
 
     # Schema Registry (Confluent Cloud)
     schema_registry_url: str = ""

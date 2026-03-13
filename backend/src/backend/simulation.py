@@ -5,6 +5,7 @@ import queue
 import random
 import threading
 import time
+from collections import deque
 from typing import Any
 
 from backend.config import get_settings
@@ -13,6 +14,9 @@ from backend.schema import DeviceMetricsValue
 
 logger = logging.getLogger(__name__)
 
+# Keep last N telemetry records sent to Kafka for metrics API (5–10 devices × 3 metrics × several ticks).
+TELEMETRY_CACHE_MAXLEN = 200
+
 SimulationType = str  # "all" | "single"
 
 _simulation_running = False
@@ -20,6 +24,7 @@ _simulation_thread: threading.Thread | None = None
 _simulation_patient_id: str | None = None
 _simulation_type: SimulationType = "all"
 _telemetry_sink: queue.Queue[dict[str, Any]] | None = None
+_telemetry_cache: deque[dict[str, Any]] = deque(maxlen=TELEMETRY_CACHE_MAXLEN)
 
 
 def set_telemetry_sink(sink: "queue.Queue[dict[str, Any]] | None") -> None:
@@ -29,12 +34,18 @@ def set_telemetry_sink(sink: "queue.Queue[dict[str, Any]] | None") -> None:
 
 
 def _emit_telemetry(rec: dict[str, Any]) -> None:
+    _telemetry_cache.append(rec)
     if _telemetry_sink is None:
         return
     try:
         _telemetry_sink.put_nowait(rec)
     except queue.Full:
         pass
+
+
+def get_cached_telemetry() -> list[dict[str, Any]]:
+    """Return the last N telemetry records sent to Kafka (for metrics API)."""
+    return list(_telemetry_cache)
 
 
 def _device_id(patient_id: str) -> str:

@@ -8,6 +8,9 @@ set -e
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$PROJECT_ROOT/backend"
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
+CONNECT_DIR="$PROJECT_ROOT/connect"
+CONNECT_URL="${CONNECT_URL:-http://localhost:8083}"
+CONNECTOR_NAME="debezium-postgres-healthcare"
 
 
 # Colors for output
@@ -125,14 +128,74 @@ start_frontend() {
 start_postgres() {
     echo -e "\n${GREEN}Starting PostgreSQL...${NC}"
     echo -e "  Port: 5432"
-    echo -e "  Config: $POSTGRES_CONFIG_FILE"
-    
+    cd "$PROJECT_ROOT"
     docker compose up postgres -d
+}
+
+# Check if Kafka Connect is running (REST API responds)
+connect_is_running() {
+    curl -sf "${CONNECT_URL}/connectors" > /dev/null 2>&1
+}
+
+# Check if the Debezium connector is defined
+connector_is_defined() {
+    curl -sf "${CONNECT_URL}/connectors/${CONNECTOR_NAME}" > /dev/null 2>&1
+}
+
+# Ensure Kafka Connect is running and the Debezium connector is registered.
+# Requires backend/.env with Kafka/Schema Registry vars. Skips if .env missing or Connect fails to start.
+ensure_kafka_connect() {
+    if [ ! -f "$BACKEND_DIR/.env" ]; then
+        echo -e "\n${YELLOW}Kafka Connect: skipped (no backend/.env)${NC}"
+        return 0
+    fi
+
+    echo -e "\n${GREEN}Kafka Connect${NC}"
+    echo -e "  URL: $CONNECT_URL"
+
+    if connect_is_running; then
+        echo -e "  ${GREEN}Connect is already running.${NC}"
+    else
+        echo -e "  ${YELLOW}Connect not running, starting with Docker Compose...${NC}"
+        cd "$PROJECT_ROOT"
+        if ! docker compose --env-file "$BACKEND_DIR/.env" up kafka-connect -d 2>/dev/null; then
+            echo -e "  ${YELLOW}Could not start Kafka Connect (check Kafka credentials in backend/.env). Continuing without Connect.${NC}"
+            return 0
+        fi
+        echo -e "  ${YELLOW}Waiting for Connect to be ready...${NC}"
+        local i=0
+        while [ $i -lt 60 ]; do
+            if connect_is_running; then
+                echo -e "  ${GREEN}Connect is ready.${NC}"
+                break
+            fi
+            sleep 5
+            i=$((i + 5))
+        done
+        if ! connect_is_running; then
+            echo -e "  ${YELLOW}Connect did not become ready in time. Register the connector later: ./connect/register-connector.sh${NC}"
+            return 0
+        fi
+    fi
+
+    if connector_is_defined; then
+        echo -e "  ${GREEN}Connector ${CONNECTOR_NAME} is already defined.${NC}"
+    else
+        echo -e "  ${YELLOW}Connector not defined. Registering...${NC}"
+        export CONNECT_URL
+        if "$CONNECT_DIR/register-connector.sh"; then
+            echo -e "  ${GREEN}Connector ${CONNECTOR_NAME} registered.${NC}"
+        else
+            echo -e "  ${YELLOW}Failed to register connector. Run manually: ./connect/register-connector.sh${NC}"
+        fi
+    fi
 }
 
 # Main execution
 check_requirements
+cd "$PROJECT_ROOT"
 start_postgres
+ensure_kafka_connect
 start_backend
 start_frontend
 LAN_IP=""
@@ -155,6 +218,7 @@ fi
 echo -e "  ${YELLOW}Frontend:${NC}       http://localhost:5173"
 echo -e "  ${YELLOW}Backend:${NC}        http://localhost:8000"
 echo -e "  ${YELLOW}API Docs:${NC}       http://localhost:8000/docs"
+echo -e "  ${YELLOW}Kafka Connect:${NC}  ${CONNECT_URL} (if started)"
 echo -e ""
 echo -e "  Press ${RED}Ctrl+C${NC} to stop all services"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

@@ -24,6 +24,7 @@ from backend.db import (
     update_prescription,
 )
 from backend.simulation import (
+    get_cached_telemetry,
     is_simulation_running,
     set_telemetry_sink,
     start_simulation,
@@ -290,6 +291,12 @@ async def _telemetry_sse_generator(request: Request):
         if lock is not None:
             async with lock:
                 _sse_subscribers.discard(q)
+
+
+@app.get("/telemetry/metrics")
+def telemetry_metrics() -> list[dict]:
+    """Return the last N telemetry records sent to Kafka (for charts)."""
+    return get_cached_telemetry()
 
 
 @app.get("/telemetry/stream")

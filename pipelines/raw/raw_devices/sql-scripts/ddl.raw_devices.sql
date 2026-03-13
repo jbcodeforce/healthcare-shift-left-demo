@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS hc_raw_devices (
   flow_rate_setting  DOUBLE COMMENT 'Flow rate setting',
   flow_level         INT COMMENT 'Flow level',
   PRIMARY KEY (device_id) NOT ENFORCED
-) DISTRIBUTED BY HASH(device_id) INTO 1 BUCKET
+) DISTRIBUTED BY HASH(device_id) INTO 1 BUCKETS
 WITH (
   'changelog.mode' = 'append',
   'key.avro-registry.schema-context' = '.flink-dev',
