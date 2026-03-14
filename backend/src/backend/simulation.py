@@ -43,6 +43,11 @@ def _emit_telemetry(rec: dict[str, Any]) -> None:
         pass
 
 
+def emit_telemetry_record(rec: dict[str, Any]) -> None:
+    """Append a telemetry record to the cache and SSE sink (for simulator scenarios)."""
+    _emit_telemetry(rec)
+
+
 def get_cached_telemetry() -> list[dict[str, Any]]:
     """Return the last N telemetry records sent to Kafka (for metrics API)."""
     return list(_telemetry_cache)

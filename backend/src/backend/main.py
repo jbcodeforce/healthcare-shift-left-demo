@@ -13,6 +13,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, model_validator
 
+from backend.analytics import (
+    get_config_changes_over_time,
+    get_dashboard_data,
+    get_new_devices_over_time,
+    get_anomalies_per_device,
+    _is_configured as analytics_configured,
+)
 from backend.data import get_devices, get_patients, get_prescriptions
 from backend.db import (
     count_prescriptions,
@@ -30,6 +37,11 @@ from backend.simulation import (
     set_telemetry_sink,
     start_simulation,
     stop_simulation,
+)
+from backend.simulator import (
+    run_flow_rate_down,
+    run_pressure_oscillate,
+    run_stop_motor,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -277,6 +289,40 @@ def simulation_stop() -> dict[str, str]:
     raise HTTPException(status_code=409, detail="Simulation was not running.")
 
 
+# ---------- Device simulator (scenario per device) ----------
+
+SimulatorType = Literal["stop_motor", "pressure_oscillate", "flow_rate_down"]
+
+
+@app.post("/device/{device_id}/simulator/{sim_type}")
+def device_simulator(device_id: str, sim_type: SimulatorType) -> dict[str, str]:
+    """Run a one-shot scenario for a device: stop_motor, pressure_oscillate, or flow_rate_down."""
+    devices = get_devices()
+    known_ids = {d["device_id"] for d in devices}
+    if device_id not in known_ids:
+        raise HTTPException(status_code=404, detail="Device not found")
+    try:
+        if sim_type == "stop_motor":
+            run_stop_motor(device_id)
+            msg = f"Stop motor scenario sent for device {device_id}."
+        elif sim_type == "pressure_oscillate":
+            run_pressure_oscillate(device_id)
+            msg = f"Pressure up/down scenario sent for device {device_id}."
+        else:
+            run_flow_rate_down(device_id)
+            msg = f"Flow rate down scenario sent for device {device_id}."
+        return {"status": "ok", "message": msg}
+    except ValueError as e:
+        logger.warning("Simulator producer init failed: %s", e)
+        raise HTTPException(
+            status_code=503,
+            detail="Telemetry backend unavailable (Kafka).",
+        ) from e
+    except Exception as e:
+        logger.exception("Simulator failed for %s: %s", device_id, e)
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
 # ---------- Telemetry SSE (existing) ----------
 
 
@@ -321,6 +367,56 @@ async def telemetry_stream(request: Request):
             "X-Accel-Buffering": "no",
         },
     )
+
+
+# ---------- Analytics (S3 Parquet / DuckDB) ----------
+
+
+@app.get("/analytics/anomalies-per-device")
+def analytics_anomalies_per_device() -> dict:
+    """Anomaly count per device. Empty list if analytics not configured."""
+    if not analytics_configured():
+        return {"available": False, "data": [], "message": "Analytics not configured (set ANALYTICS_S3_* or ANALYTICS_LOCAL_PATH)."}
+    data = get_anomalies_per_device()
+    return {"available": True, "data": data}
+
+
+@app.get("/analytics/config-changes-over-time")
+def analytics_config_changes_over_time() -> dict:
+    """Configuration changes per day. Empty list if analytics not configured."""
+    if not analytics_configured():
+        return {"available": False, "data": [], "message": "Analytics not configured (set ANALYTICS_S3_* or ANALYTICS_LOCAL_PATH)."}
+    data = get_config_changes_over_time()
+    return {"available": True, "data": data}
+
+
+@app.get("/analytics/new-devices-over-time")
+def analytics_new_devices_over_time() -> dict:
+    """New devices first seen per day. Empty list if analytics not configured."""
+    if not analytics_configured():
+        return {"available": False, "data": [], "message": "Analytics not configured (set ANALYTICS_S3_* or ANALYTICS_LOCAL_PATH)."}
+    data = get_new_devices_over_time()
+    return {"available": True, "data": data}
+
+
+@app.get("/analytics/dashboard")
+def analytics_dashboard() -> dict:
+    """All dashboard metrics in one response."""
+    if not analytics_configured():
+        return {
+            "available": False,
+            "anomalies_per_device": [],
+            "config_changes_over_time": [],
+            "new_devices_over_time": [],
+            "message": "Analytics not configured (set ANALYTICS_S3_* or ANALYTICS_LOCAL_PATH).",
+        }
+    payload = get_dashboard_data()
+    return {
+        "available": True,
+        "anomalies_per_device": payload["anomalies_per_device"],
+        "config_changes_over_time": payload["config_changes_over_time"],
+        "new_devices_over_time": payload["new_devices_over_time"],
+    }
 
 
 def run() -> None:

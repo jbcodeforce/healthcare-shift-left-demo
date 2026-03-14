@@ -1,11 +1,15 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { Chart } from 'chart.js/auto'
-import { getSimulationStatus, startSimulation, stopSimulation, subscribeTelemetryStream, getTelemetryMetrics } from '../api/deviceGenerator.js'
+import { getSimulationStatus, startSimulation, stopSimulation, subscribeTelemetryStream, getTelemetryMetrics, getDevices, triggerDeviceSimulation } from '../api/deviceGenerator.js'
 
 const status = ref(null)
 const error = ref(null)
 const loading = ref(false)
+const devices = ref([])
+const selectedDeviceId = ref(null)
+const simulatorMessage = ref(null)
+const simulatorLoading = ref(false)
 const telemetryEvents = ref([])
 const maxEvents = 100
 const streamPaused = ref(false)
@@ -195,7 +199,22 @@ async function stop() {
   }
 }
 
-
+async function runScenario(type) {
+  if (!selectedDeviceId.value) return
+  simulatorLoading.value = true
+  simulatorMessage.value = null
+  error.value = null
+  try {
+    const res = await triggerDeviceSimulation(selectedDeviceId.value, type)
+    simulatorMessage.value = res.message || 'Scenario sent.'
+    setTimeout(() => { simulatorMessage.value = null }, 4000)
+  } catch (e) {
+    simulatorMessage.value = null
+    error.value = e.message || 'Scenario failed'
+  } finally {
+    simulatorLoading.value = false
+  }
+}
 
 function clearEvents() {
   telemetryEvents.value = []
@@ -218,6 +237,11 @@ function toggleStream() {
 
 onMounted(async () => {
   await fetchStatus()
+  try {
+    devices.value = await getDevices()
+  } catch (_) {
+    // ignore
+  }
   const { nextTick } = await import('vue')
   await nextTick()
   initCharts()
@@ -250,6 +274,40 @@ onUnmounted(() => {
         <button type="button" :disabled="loading || status === 'stopped'" @click="stop">
           Stop simulation
         </button>
+      </div>
+      <div class="device-simulator">
+        <h4>Device scenario</h4>
+        <p class="muted">Select a device and run a one-shot scenario (telemetry sent to Kafka).</p>
+        <select v-model="selectedDeviceId" class="device-select" aria-label="Select device">
+          <option :value="null" disabled>Select device</option>
+          <option v-for="d in devices" :key="d.device_id" :value="d.device_id">
+            {{ d.device_id }} ({{ d.patientId }})
+          </option>
+        </select>
+        <div class="buttons scenario-buttons">
+          <button
+            type="button"
+            :disabled="!selectedDeviceId || simulatorLoading"
+            @click="runScenario('stop_motor')"
+          >
+            Stop motor
+          </button>
+          <button
+            type="button"
+            :disabled="!selectedDeviceId || simulatorLoading"
+            @click="runScenario('pressure_oscillate')"
+          >
+            Pressure up/down
+          </button>
+          <button
+            type="button"
+            :disabled="!selectedDeviceId || simulatorLoading"
+            @click="runScenario('flow_rate_down')"
+          >
+            Flow rate down
+          </button>
+        </div>
+        <p v-if="simulatorMessage" class="simulator-message">{{ simulatorMessage }}</p>
       </div>
     </section>
 
@@ -414,6 +472,37 @@ button.active {
 .muted {
   color: var(--text);
   opacity: 0.8;
+  font-size: 0.9rem;
+}
+.device-simulator {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+.device-simulator h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-h);
+  margin: 0 0 0.5rem;
+}
+.device-select {
+  display: block;
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  min-width: 12rem;
+}
+.scenario-buttons {
+  margin-top: 0.25rem;
+}
+.simulator-message {
+  margin-top: 0.5rem;
+  color: green;
   font-size: 0.9rem;
 }
 </style>

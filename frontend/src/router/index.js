@@ -6,6 +6,7 @@ import DevicesView from '../views/DevicesView.vue'
 import PrescriptionsView from '../views/PrescriptionsView.vue'
 import TelemetryView from '../views/TelemetryView.vue'
 import DemonstrationView from '../views/DemonstrationView.vue'
+import AnalyticsView from '../views/AnalyticsView.vue'
 
 const routes = [
   {
@@ -17,6 +18,7 @@ const routes = [
       { path: 'devices', name: 'Devices', component: DevicesView },
       { path: 'prescriptions', name: 'Prescriptions', component: PrescriptionsView },
       { path: 'telemetry', name: 'Telemetry', component: TelemetryView },
+      { path: 'analytics', name: 'Analytics', component: AnalyticsView },
       { path: 'demonstration', name: 'Demonstration', component: DemonstrationView },
     ],
   },

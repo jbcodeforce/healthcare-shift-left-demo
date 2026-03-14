@@ -119,6 +119,30 @@ export async function stopSimulation() {
   return res.json()
 }
 
+/** Simulator scenario types. */
+const SIMULATOR_TYPES = ['stop_motor', 'pressure_oscillate', 'flow_rate_down']
+
+/**
+ * Trigger a one-shot scenario for a device.
+ * @param { string } deviceId - device_id (e.g. DEV-P001)
+ * @param { 'stop_motor' | 'pressure_oscillate' | 'flow_rate_down' } type
+ * @returns { Promise<{ status: string, message: string }> }
+ */
+export async function triggerDeviceSimulation(deviceId, type) {
+  if (!SIMULATOR_TYPES.includes(type)) {
+    throw new Error(`Invalid simulator type: ${type}`)
+  }
+  const res = await fetch(
+    `${apiBase}/device/${encodeURIComponent(deviceId)}/simulator/${type}`,
+    { method: 'POST' }
+  )
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || `Simulator failed: ${res.status}`)
+  }
+  return res.json()
+}
+
 /**
  * Fetch last N telemetry records sent to Kafka (for metrics charts).
  * @returns { Promise<Array<{ device_id, patient_id, ts, metric_name, metric_value, software_version }>> }
@@ -151,4 +175,16 @@ export function subscribeTelemetryStream(onEvent) {
   return () => {
     eventSource.close()
   }
+}
+
+// ---------- Analytics (S3 Parquet / DuckDB dashboard) ----------
+
+/**
+ * Fetch all dashboard metrics in one call.
+ * @returns { Promise<{ available: boolean, anomalies_per_device: Array<{ device_id: string, count: number }>, config_changes_over_time: Array<{ date: string, count: number }>, new_devices_over_time: Array<{ date: string, count: number }>, message?: string }> }
+ */
+export async function getDashboardData() {
+  const res = await fetch(`${apiBase}/analytics/dashboard`)
+  if (!res.ok) throw new Error(`Analytics failed: ${res.status}`)
+  return res.json()
 }

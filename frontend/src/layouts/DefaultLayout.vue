@@ -14,6 +14,7 @@ import { RouterLink, RouterView } from 'vue-router'
         <RouterLink to="/devices" class="nav-link" active-class="nav-link-active">Devices</RouterLink>
         <RouterLink to="/prescriptions" class="nav-link" active-class="nav-link-active">Prescriptions</RouterLink>
         <RouterLink to="/telemetry" class="nav-link" active-class="nav-link-active">Device telemetry</RouterLink>
+        <RouterLink to="/analytics" class="nav-link" active-class="nav-link-active">Analytics</RouterLink>
         <RouterLink to="/demonstration" class="nav-link" active-class="nav-link-active">Demonstration</RouterLink>
       </nav>
       <main class="app-main">

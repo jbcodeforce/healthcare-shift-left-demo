@@ -25,6 +25,14 @@ class Settings(BaseSettings):
     # PostgreSQL (prescriptions)
     database_url: str = ""
 
+    # Analytics (S3 Parquet / Iceberg via DuckDB)
+    analytics_s3_bucket: str = ""
+    analytics_s3_prefix: str = ""
+    analytics_local_path: str = ""  # e.g. analytics/sample-data/parquet for local Parquet
+    aws_access_key_id: str = ""
+    aws_secret_access_key: str = ""
+    aws_region: str = "us-east-1"
+
 
 def get_settings() -> Settings:
     return Settings()
