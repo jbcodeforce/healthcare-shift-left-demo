@@ -1,6 +1,12 @@
-# Development instructions
+# Development Instructions
 
-This document describes how to run the healthcare shift left demo locally, the codebase structure, and the solution design. It is intended for developers who need to modify or extend the demo.
+This document describes:
+
+* how to run the healthcare shift left demo locally during development
+* the codebase structure
+* the solution design.
+
+It is intended for developers who need to modify or extend this code base.
 
 ---
 
@@ -13,6 +19,26 @@ This document describes how to run the healthcare shift left demo locally, the c
 5. [Solution design](#solution-design)
 
 ---
+## Understanding the main components
+
+From the figure below, the green components run locally with docker compose, the Confluent Environment, Kafka cluster, Flink Compute pools, Terraform are created via Terraform, and the S3 bucket, IAM role and access policies are done using AWS concole.
+
+![](./images/demo_components.drawio.png)
+
+### Backend
+The **backend** is the demo API and telemetry Kafka producer: REST endpoints for patients, devices, and prescriptions, plus simulation control and telemetry SSE.
+
+### Frontend
+
+A Vue.js control plane runs in `frontend/` and provides a home page with left navigation (Patients, Devices, Prescriptions, Device telemetry), plus simulation control and live telemetry stream.
+
+The app expects the backend API at `http://localhost:8000` by default. Override with `VITE_API_URL` (e.g. in `frontend/.env`). The control plane fetches patients, devices, and prescriptions from the backend and lets you start/stop the device simulation and connect to the live telemetry SSE stream.
+
+### Kafka Connect and Debezium
+
+**Kafka Connect** runs in the same Docker Compose stack and streams **PostgreSQL CDC** (change data capture) to **Confluent Cloud Kafka** using the **Debezium PostgreSQL** connector. It uses the same Confluent credentials as the backend (Kafka bootstrap servers, API key/secret as `KAFKA_SASL_USERNAME`/`KAFKA_SASL_PASSWORD`, and Schema Registry). No local Kafka broker is required.
+
+**Postgres**: The Compose Postgres service is started with `wal_level=logical` for logical decoding. An init script grants `REPLICATION` to the app user so Debezium can create replication slots. If the database was created before adding this setup, run once: `ALTER USER demo WITH REPLICATION;` (or your `POSTGRES_USER`) inside Postgres.
 
 ## Prerequisites
 
@@ -21,9 +47,10 @@ This document describes how to run the healthcare shift left demo locally, the c
 - **Python 3.10+ with uv** — for running the backend in dev mode (recommended). Alternatively use the backend Docker image.
 - **Confluent Cloud** — Kafka cluster and Schema Registry for device telemetry and Debezium CDC. The demo can run without Kafka for local UI and API testing; simulation, Kafka Connect, and Flink Statment deployment will require credentials.
 
+
 ### Environment (backend)
 
-Copy and edit the backend environment file:
+Copy and edit the backend `.env` environment file:
 
 ```bash
 cp backend/.env.example backend/.env
@@ -41,7 +68,7 @@ For **PostgreSQL** (prescriptions CRUD and Debezium), the Compose stack uses `PO
 
 ### Option A: One-command dev mode (recommended for developers)
 
-Starts Postgres via Docker, then the backend (uvicorn) and frontend (Vite) on the host so you can edit code and see changes immediately.
+The `./start_dev_mode.sh` script, starts Postgres via Docker, then the backend (uvicorn) and frontend (Vite) on the host so you can edit code and see changes immediately.
 
 ```bash
 # From repo root; ensure backend/.env exists (at least DATABASE_URL if using Postgres)
@@ -114,7 +141,7 @@ docker compose --env-file backend/.env up -d kafka-connect
 
 ### Running Kafka Connect
 
-Kafka Connect (with the Debezium PostgreSQL connector) streams changes from the local `prescriptions` table to Confluent Cloud Kafka. It is **optional** and requires Kafka and Schema Registry credentials in `backend/.env`.
+Kafka Connect (with the Debezium PostgreSQL connector) streams changes from the local `prescriptions` table to Confluent Cloud Kafka. It requires Kafka and Schema Registry credentials in `backend/.env`.
 
 **When using `./start_dev_mode.sh`:** The script automatically assesses whether Connect is running; if not, it starts the Connect container, waits for the REST API, then checks if the connector `debezium-postgres-healthcare` is defined and registers it when missing. If `backend/.env` is absent or Connect fails to start (e.g. invalid Kafka config), the script continues without failing.
 
@@ -256,6 +283,121 @@ Used with the shift-left tool (see README) for deployment. Not required for runn
 
 ## Solution design
 
+You typically need some main entities to show a meaningful "Patient Journey" in a stream: the Patient, the Provider, the Medical device and the Prescription. We want to measure drift. CPAPs/Ventilators-style devices, prescription drift can indicate:
+
+* Mask Leak: If the pressure required to maintain airflow increases significantly, the mask may be fitted poorly.
+* Patient Condition Change: If the patient's airway resistance changes, the device may no longer be providing effective therapy at the original prescribed level.
+* Mechanical Wear: The motor may be failing to reach the target RPMs required for the prescribed pressure.
+
+### A. Patient Class
+
+This represents the static/slow-moving dimensions of the person.
+
+```Java
+public class Patient {
+    public String patientId;   // Primary Key
+    public String name;
+    public String gender;
+    public String birthDate;
+    public String zipCode;     // Useful for Flink geo-aggregations
+    
+    // Default constructor for Flink/POJO serialization
+    public Patient() {}
+}
+```
+
+The Patient may have a device assigned to.
+
+```java
+public class Device {
+   public String device_id;
+   public String patientId;
+   public double preassureSetting;
+   public double flowRateSetting;
+   public int flowLevel;
+}
+```
+
+
+### B. Prescription Class
+
+The "Desired State". It tells Flink what the device should be doing.
+
+```Java
+public class Prescription {
+    public String prescriptionId;
+    public String patientId;
+    public String deviceId;
+    public String medicationOrTherapy; // e.g., "CPAP Oxygen Flow"
+    public String metricName;
+    public double targetValue;          // e.g., 2.5 (Liters per minute)
+    public double toleranceRange;      // e.g., 0.5 (Acceptable +/-)
+    public long startDate;
+    public long endDate;
+    
+    public Prescription() {}
+}
+```
+
+### C. DeviceTelemetry 
+The "Observed State": This is the high-velocity stream coming from the hardware.
+
+```Java
+public class DeviceTelemetry {
+    public String deviceId;
+    public String patientId;
+    public long timestamp;
+    public String metricName;          // e.g.,"Pressure"
+    public double metricValue;
+    public String softwareVersion;     // Crucial for manufacturers (debugging)
+    
+    public DeviceTelemetry() {}
+}
+```
+
+### D. Drift Alert
+```java
+public class DriftAlert {
+    public String deviceId;
+    public String patientId;
+    public String message;
+    public double prescribedValue;
+    public double actualValue;
+}
+```
+
+### HealthProvider Class (Future extension)
+This represents the doctor.
+
+```Java
+public class HealthProvider {
+    public String providerId;
+    public String organizationName;
+    public String specialty;   // e.g., "Cardiology", "General Practice"
+    public String NPI;         // National Provider Identifier
+    
+    public HealthProvider() {}
+}
+```
+
+### Encounter ( (Future extension)
+This is the "Fact" table that will flow through your Kafka topic. It is the most important class for Flink because it contains the timestamps.
+
+```Java
+public class Encounter {
+    public String encounterId;
+    public String patientId;    // Foreign Key to Patient
+    public String providerId;   // Foreign Key to Provider
+    public long timestamp;      // Event time for Flink Windowing
+    public String type;         // e.g., "Inpatient", "Ambulatory", "Emergency"
+    public double cost;         // For "Sum" or "Avg" aggregations
+    public String diagnosisCode; // ICD-10 code
+    
+    public Encounter() {}
+}
+```
+
+
 ### High-level data flow
 
 1. **Prescriptions (command/intent)**  
@@ -299,3 +441,20 @@ main.py
 - **Avro + Schema Registry** for Kafka so Confluent Cloud and Flink can use consistent schemas for `device_metrics` and CDC topics.
 
 For domain model (Patient, Device, Prescription, DeviceTelemetry, drift alerts) and Flink use cases (compliance alerting, device health), see the main [README](../README.md).
+
+
+--- 
+## Deployment
+
+* Be sure to have set env variables. See[.env.example](.env.example)
+
+### With shift left tool
+
+```sh
+source set_j9r_env
+shift_left table build-inventory $PIPELINES
+shift_left pipeline build-all-metadata
+shift_left pipeline deploy --table-name device_metrics --compute-pool-id $FLINK_COMPUTE_POOL_ID
+shift_left pipeline deploy --table-name raw_devices --compute-pool-id $FLINK_COMPUTE_POOL_ID
+shift_left pipeline deploy --table-name raw_patients --compute-pool-id $FLINK_COMPUTE_POOL_ID
+```

@@ -1,208 +1,47 @@
 # Healthcare Data Streaming Processing Demonstration
 
-Created 03/10/2026 - Updated 
+Created 03/10/2026 - Updated 03/15/26
 
 ## Goals
 
-The scope of this repository is to build an end-to-end demonstration starting from Debezium CDC to Confluent Cloud Flink SQL to process (Raw->Bronze->Silver->Gold records), to s3 parquet/iceberg tables.
+The scope of this repository is to build an end-to-end healthcare related demonstration, starting from Debezium CDC to Confluent Cloud Kafka, Flink SQL to process Raw->Bronze->Silver->Gold records, to sink s3 parquet/iceberg tables.
 
-
-The approach is to use healthcare use case, like Patient records, health provider, prescriptions and device monitoring. Address device monitoring and compliance to a prescription. With the basic domain model but representing good foundations to present different real-time processing use cases. We use Flink to compare Command/Intent (The Prescription) against Reality (The Telemetry). 
+The approach is to use healthcare use case, like Patient records, health provider, prescriptions and device monitoring. The demonstration illustrates device monitoring and compliance to a doctor's prescription. With the basic domain model but representing good foundations to present different real-time processing use cases. We use Flink to compare Command/Intent (The Prescription) against Reality (The Telemetry). 
 
 The audiance of this demonstration is data engineers to understand the art of feaseable. 
 
+## Table of Content
+
+* [Demonstration Architecture](#architecture)
+* [Use Cases](#use-cases)
+* [Demonstration Script](./docs/demonstration_script.md)
+* [Implementation Approach](./docs/dev_instructions.md)
+
+## Architecture
+
 ### Pipelines Architecture
 
-The figure below presents the Data pipeline from processing raw data to solver or gold records.
+The figure below presents the production deployment of data streaming pipelines from processing raw data to silver or gold records. The pipeline processing is done using Confluent Cloud Flink SQL queries. 
 
 ![](./docs/images/pipeline-view.drawio.png)
+
+In the demonstration only Prescriptions are using CDC.
 
 ### Demonstration Components
 
 ![](./docs/images/demo_components.drawio.png)
 
-
-## Features
+### Features
 
 * **Backend (FastAPI)** — REST API for patients, devices, and prescriptions; health check; device simulation (start/stop, all or single patient); device telemetry streamed via Server-Sent Events (SSE) and produced to Confluent Cloud Kafka (Avro + Schema Registry).
 * **PostgreSQL** — Prescriptions stored in Postgres with logical decoding enabled (`wal_level=logical`) for CDC. One row per prescription; parameters stored as JSON.
 * **Prescriptions CRUD** — Create, read, update, and delete prescriptions via API and frontend. Prescription IDs are generated with a 4-character suffix (e.g. `RX-DEV-P002-a3F9`) to avoid duplicates. Requires PostgreSQL (DATABASE_URL).
 * **Frontend (Vue.js)** — Control plane with navigation: Home, Patients, Devices, Prescriptions, Device telemetry, Demonstration. List views for patients, devices, and prescriptions (grouped by device); “New prescription” form with patient/device dropdowns and parameter rows; delete prescription per row; simulation control; live telemetry SSE stream.
-* **Kafka Connect + Debezium** — Connect runs in Docker Compose; Debezium PostgreSQL connector streams changes from the local `prescriptions` table to Confluent Cloud Kafka (Avro, Schema Registry). Topic prefix `healthcare` (e.g. `healthcare.public.prescriptions`). Register connector with `./connect/register-connector.sh`.
+* **Kafka Connect + Debezium** — Connect runs in Docker Compose; Debezium PostgreSQL connector streams changes from the local `prescriptions` table to Confluent Cloud Kafka (Avro, Schema Registry). Topic prefix `healthcare` (e.g. `healthcare.public.prescriptions`). Register connector with `./connect/register-connector.sh`. The implementation adds a schema name stratefy to support different Schema Registry context.
 * **Pipelines** — Flink SQL DDL/DML for raw and RMD layers (e.g. raw_patients, raw_devices, raw_prescriptions, device_metrics). Deploy with shift-left tool to Confluent Cloud Flink.
 
 
-## Running the demo backend
-
-For developers [see specific instructions](./docs/dev_instructions.md) for running locally, code structure and implementation approaches.
-
-### Pre-requisites
-
-* get docker and docker compose
-
-### Backend
-The **backend** is the demo API and telemetry producer: REST endpoints for patients, devices, and prescriptions, plus simulation control and telemetry SSE.
-
-From the repo root, start the backend with Docker Compose:
-
-```bash
-# Set Confluent Cloud Kafka and Schema Registry credentials (see backend/.env.example)
-cp backend/.env.example backend/.env
-# edit backend/.env
-
-docker compose up -d backend
-```
-
-API: `http://localhost:8000` — `GET /patients`, `GET /devices`, `GET /prescriptions`, `GET /health`, `GET /simulation/status`, `POST /simulation/start`, `POST /simulation/stop`, `GET /telemetry/stream` (SSE).
-
-### Frontend
-
-A Vue.js control plane runs in `frontend/` and provides a home page with left navigation (Patients, Devices, Prescriptions, Device telemetry), plus simulation control and live telemetry stream.
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-The app expects the backend API at `http://localhost:8000` by default. Override with `VITE_API_URL` (e.g. in `frontend/.env`). The control plane fetches patients, devices, and prescriptions from the backend and lets you start/stop the device simulation and connect to the live telemetry SSE stream.
-
-### Kafka Connect and Debezium
-
-**Kafka Connect** runs in the same Docker Compose stack and streams **PostgreSQL CDC** (change data capture) to **Confluent Cloud Kafka** using the **Debezium PostgreSQL** connector. It uses the same Confluent credentials as the backend (Kafka bootstrap servers, API key/secret as `KAFKA_SASL_USERNAME`/`KAFKA_SASL_PASSWORD`, and Schema Registry). No local Kafka broker is required.
-
-1. **Start Connect** (after `backend/.env` is set with Confluent and Postgres vars). So that Compose can substitute Kafka/Schema Registry variables, use the backend env file:
-   ```bash
-   docker compose --env-file backend/.env up -d kafka-connect
-   ```
-   Or run `docker compose up -d kafka-connect` from the repo root if your shell or a root `.env` already exports `KAFKA_BOOTSTRAP_SERVERS`, `KAFKA_SASL_USERNAME`, `KAFKA_SASL_PASSWORD`, `SCHEMA_REGISTRY_URL`, and `SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO`.
-2. **Register the Debezium connector** (idempotent; run from repo root):
-   ```bash
-   ./connect/register-connector.sh
-   ```
-   Optionally set `CONNECT_URL=http://localhost:8083` if Connect runs elsewhere. The script sources `backend/.env` for `POSTGRES_USER` and `POSTGRES_PASSWORD` and creates the connector `debezium-postgres-healthcare` if missing.
-3. **Check connector status**: `curl -s http://localhost:8083/connectors/debezium-postgres-healthcare/status | jq .`
-4. **Topic names**: Debezium writes to Confluent Cloud topics with prefix `healthcare`. The `prescriptions` table is captured as `healthcare.public.prescriptions` (or `healthcare.healthcare.prescriptions` depending on schema). Use these topic names in Flink or pipeline config.
-
-**Postgres**: The Compose Postgres service is started with `wal_level=logical` for logical decoding. An init script grants `REPLICATION` to the app user so Debezium can create replication slots. If the database was created before adding this setup, run once: `ALTER USER demo WITH REPLICATION;` (or your `POSTGRES_USER`) inside Postgres.
-
-## The Core Domain Classes
-
-You typically need some main entities to show a meaningful "Patient Journey" in a stream: the Patient, the Provider, the Medical device and the Prescription. We want to measure drift. CPAPs/Ventilators-style devices, prescription drift can indicate:
-
-* Mask Leak: If the pressure required to maintain airflow increases significantly, the mask may be fitted poorly.
-* Patient Condition Change: If the patient's airway resistance changes, the device may no longer be providing effective therapy at the original prescribed level.
-* Mechanical Wear: The motor may be failing to reach the target RPMs required for the prescribed pressure.
-
-### A. Patient Class
-
-This represents the static/slow-moving dimensions of the person.
-
-```Java
-public class Patient {
-    public String patientId;   // Primary Key
-    public String name;
-    public String gender;
-    public String birthDate;
-    public String zipCode;     // Useful for Flink geo-aggregations
-    
-    // Default constructor for Flink/POJO serialization
-    public Patient() {}
-}
-```
-
-The Patient may have a device assigned to.
-
-```java
-public class Device {
-   public String device_id;
-   public String patientId;
-   public double preassureSetting;
-   public double flowRateSetting;
-   public int flowLevel;
-}
-```
-
-
-### B. Prescription Class
-
-The "Desired State". It tells Flink what the device should be doing.
-
-```Java
-public class Prescription {
-    public String prescriptionId;
-    public String patientId;
-    public String deviceId;
-    public String medicationOrTherapy; // e.g., "CPAP Oxygen Flow"
-    public String metricName;
-    public double targetValue;          // e.g., 2.5 (Liters per minute)
-    public double toleranceRange;      // e.g., 0.5 (Acceptable +/-)
-    public long startDate;
-    public long endDate;
-    
-    public Prescription() {}
-}
-```
-
-### C. DeviceTelemetry 
-The "Observed State": This is the high-velocity stream coming from the hardware.
-
-```Java
-public class DeviceTelemetry {
-    public String deviceId;
-    public String patientId;
-    public long timestamp;
-    public String metricName;          // e.g.,"Pressure"
-    public double metricValue;
-    public String softwareVersion;     // Crucial for manufacturers (debugging)
-    
-    public DeviceTelemetry() {}
-}
-```
-
-### D. Drift Alert
-```java
-public class DriftAlert {
-    public String deviceId;
-    public String patientId;
-    public String message;
-    public double prescribedValue;
-    public double actualValue;
-}
-```
-
-### HealthProvider Class (Future extension)
-This represents the doctor.
-
-```Java
-public class HealthProvider {
-    public String providerId;
-    public String organizationName;
-    public String specialty;   // e.g., "Cardiology", "General Practice"
-    public String NPI;         // National Provider Identifier
-    
-    public HealthProvider() {}
-}
-```
-
-### Encounter ( (Future extension)
-This is the "Fact" table that will flow through your Kafka topic. It is the most important class for Flink because it contains the timestamps.
-
-```Java
-public class Encounter {
-    public String encounterId;
-    public String patientId;    // Foreign Key to Patient
-    public String providerId;   // Foreign Key to Provider
-    public long timestamp;      // Event time for Flink Windowing
-    public String type;         // e.g., "Inpatient", "Ambulatory", "Emergency"
-    public double cost;         // For "Sum" or "Avg" aggregations
-    public String diagnosisCode; // ICD-10 code
-    
-    public Encounter() {}
-}
-```
-
-## The Flink Use Case
+## Use Cases
 
 ### Compliance Alerting
 
@@ -212,6 +51,9 @@ If DeviceTelemetry.metricValue is outside the Prescription.targetValue +/- toler
 The Sink: Send the alert to a new Kafka topic: alerts.compliance.non-adherence.
 
 ### Device's health
+
+![](./docs/images/start_simul_metrics.png)
+
 Goal assess device reliability:
 
 * Windowed Aggregation: Calculate the average BatteryLevel or InternalTemperature over a 1-hour tumbling window.
@@ -221,17 +63,20 @@ Goal assess device reliability:
 If we do an insulin pump, we can have Flink detecting a spike in BloodGlucose (Telemetry). Then checks the Prescription for the maximum allowable dose, to finally sends a command back to a Kafka topic `device.commands` to trigger an insulin bolus automatically.
 
 
-## Deployment
+## Quick Start
 
-* Be sure to have set env variables. See[.env.example](.env.example)
+For developers [see specific instructions](./docs/dev_instructions.md) for running locally, with code structure explanation  and implementation approachs.
 
-### With shift left tool
+For end-user get the pre-requisites and run the infrastructure setup and start the application with docker compose.
 
-```sh
-source set_j9r_env
-shift_left table build-inventory $PIPELINES
-shift_left pipeline build-all-metadata
-shift_left pipeline deploy --table-name device_metrics --compute-pool-id $FLINK_COMPUTE_POOL_ID
-shift_left pipeline deploy --table-name raw_devices --compute-pool-id $FLINK_COMPUTE_POOL_ID
-shift_left pipeline deploy --table-name raw_patients --compute-pool-id $FLINK_COMPUTE_POOL_ID
-```
+### Prerequisites
+
+* get docker and docker compose
+* get terraform
+
+### Infrastructure as Code
+
+### Local Execution
+
+### Pipeline Review
+

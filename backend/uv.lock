@@ -79,7 +79,6 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "duckdb" },
     { name = "httpx" },
     { name = "pytest" },
     { name = "ruff" },
@@ -89,7 +88,6 @@ dev = [
 requires-dist = [
     { name = "confluent-kafka", extras = ["avro"], specifier = ">=2.3.0" },
     { name = "duckdb", specifier = ">=1.0.0" },
-    { name = "duckdb", marker = "extra == 'dev'", specifier = ">=1.0.0" },
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.1.0" },

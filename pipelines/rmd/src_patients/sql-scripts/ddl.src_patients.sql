@@ -4,6 +4,8 @@ CREATE TABLE IF NOT EXISTS hc_src_patients (
   gender       STRING COMMENT 'Gender',
   birth_date   STRING COMMENT 'Birth date',
   zip_code     STRING COMMENT 'Zip code (for geo-aggregations)',
+  source_ts_ms BIGINT COMMENT 'Source timestamp in milliseconds',
+  op           STRING COMMENT 'Debezium op: c=create, u=update, d=delete, r=read/snapshot',
   PRIMARY KEY (patient_id) NOT ENFORCED
 ) DISTRIBUTED BY HASH(patient_id) INTO 1 BUCKETS
 WITH (

@@ -5,7 +5,10 @@ import { RouterLink, RouterView } from 'vue-router'
 <template>
   <div class="app-layout">
     <header class="app-header">
-      <h1 class="app-title">Healthcare Demo</h1>
+      <h1 class="app-title">
+        <img src="/batchy.png" alt="" class="app-title-logo" />
+        Healthcare Demo
+      </h1>
     </header>
     <div class="app-body">
       <nav class="app-sidebar">
@@ -16,6 +19,7 @@ import { RouterLink, RouterView } from 'vue-router'
         <RouterLink to="/telemetry" class="nav-link" active-class="nav-link-active">Device telemetry</RouterLink>
         <RouterLink to="/analytics" class="nav-link" active-class="nav-link-active">Analytics</RouterLink>
         <RouterLink to="/demonstration" class="nav-link" active-class="nav-link-active">Demonstration</RouterLink>
+        <a href="https://confluent.cloud/environments" class="nav-link" target="_blank" rel="noopener noreferrer">Confluent console</a>
       </nav>
       <main class="app-main">
         <RouterView />
@@ -43,6 +47,14 @@ import { RouterLink, RouterView } from 'vue-router'
   font-size: 1.25rem;
   font-weight: 600;
   color: var(--text-h);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.app-title-logo {
+  height: 1.5em;
+  width: auto;
 }
 
 .app-body {
