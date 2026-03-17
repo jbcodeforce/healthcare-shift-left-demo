@@ -1,5 +1,13 @@
 INSERT INTO hc_src_devices
 SELECT 
--- part to select stuff
-FROM src_table
-WHERE -- where condition or remove it   
+    device_id,
+    patient_id,
+    model_type,
+    manufacturer,
+    serial_number,
+    software_version,
+    pressure_setting,
+    flow_rate_setting,
+    flow_level
+FROM hc_raw_devices
+WHERE patient_id IS NOT NULL

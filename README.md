@@ -43,22 +43,30 @@ In the demonstration only Prescriptions are using CDC.
 
 ## Use Cases
 
-### Compliance Alerting
+### Building golden records
 
-Use a join between the Prescription stream with the DeviceTelemetry stream to check for "Prescription Drift.
-The prescriptions change rarely but apply to every telemetry point, we may want to use Broadcast State if done with DataStream. 
-If DeviceTelemetry.metricValue is outside the Prescription.targetValue +/- toleranceRange for more than $X$ minutes, trigger an alert.
+As part of moving from batch to real-time processing the following dimensions and facts can be created. Dimensions are static/slow-moving context (who/what/where), facts are events with timestamps and additive measures.
+
+| Dim/Fact | Explanation | Reference |
+|-------|-------------|-----------|
+| dim_patients | one row per patient (with device and current prescription-derived settings: pressure, flow rate, flow level | [dml.dim_patients.sql](./pipelines/rmd/dim_patients/sql-scripts/dml.dim_patients.sql) | 
+| fact_drift_events | Assess devise metric vs prescription, one row per drift alert  | [dml.hc_fct_drift_evts.sql](./pipelines/rmd/hc_fct_drift_evts/sql-scripts/dml.hc_fct_drift_evts.sql) |
+| Telemetry Facts | fact_telemetry_1h: windowed aggregates per device/patient/metric. fact_compliance_1h: in-range vs total readings (and optionally compliance_pct) per window. | [](./pipelines/rmd/hc_fct_telemetries/sql-scripts/dml.hc_fct_telemetry_1h.sql) |
+
+#### Compliance Alerting
+
+Use a join between the Prescription stream with the DeviceTelemetry stream to check for **Prescription Drift**.
+The prescriptions change rarely. If DeviceTelemetry.metricValue is outside the Prescription.targetValue +/- toleranceRange for more than $X$ minutes, trigger an alert.
 The Sink: Send the alert to a new Kafka topic: alerts.compliance.non-adherence.
 
-### Device's health
+#### Device's health
 
 ![](./docs/images/start_simul_metrics.png)
 
 Goal assess device reliability:
 
-* Windowed Aggregation: Calculate the average BatteryLevel or InternalTemperature over a 1-hour tumbling window.
-* Pattern Recognition: If the InternalTemperature increases by $>10% over three consecutive windows while FlowRate remains constant, the device may have a clogged filter.
-
+* Windowed Aggregation: Calculate the average Pressure level or rate flow over a 1-hour tumbling window.
+* Pattern Recognition: If the Pressure increases by $>10% over three consecutive windows while FlowRate remains constant, the device may have a clogged filter.
 
 If we do an insulin pump, we can have Flink detecting a spike in BloodGlucose (Telemetry). Then checks the Prescription for the maximum allowable dose, to finally sends a command back to a Kafka topic `device.commands` to trigger an insulin bolus automatically.
 
@@ -80,3 +88,8 @@ For end-user get the pre-requisites and run the infrastructure setup and start t
 
 ### Pipeline Review
 
+
+## Resources
+
+* [Confluent Cloud Flink product documentation](https://docs.confluent.io/cloud/current/flink/overview.html)
+* [Guide for Apache Flink and Confluent Flink products](https://jbcodeforce.github.io/flink-studies/)

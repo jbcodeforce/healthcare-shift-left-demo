@@ -1,6 +1,6 @@
-# Confluent Cloud Terraform (Environment, Kafka, Flink)
+# Confluent Cloud Terraform (Environment, Kafka, Flink, Statements)
 
-This folder contains Terraform definitions for the healthcare-shift-left-demo Confluent Cloud setup: **environment**, **Kafka cluster**, and **Flink compute pool**. You can either create all resources or attach to an existing environment and/or Kafka cluster using variables.
+This folder contains Terraform definitions for the healthcare-shift-left-demo Confluent Cloud setup: **environment**, **Kafka cluster**, **Flink compute pool**, and **Flink SQL statements**. You can either create all resources or attach to an existing environment and/or Kafka cluster using variables.
 
 ## Resources
 
@@ -9,6 +9,7 @@ This folder contains Terraform definitions for the healthcare-shift-left-demo Co
 | Confluent Environment | When `environment_id` is not set     |
 | Kafka Cluster       | When `kafka_cluster_id` is not set    |
 | Flink Compute Pool  | Always (in the target environment)   |
+| Flink SQL Statements | When `deploy_flink_statements` is true (default) |
 
 ## File structure
 
@@ -19,6 +20,7 @@ This folder contains Terraform definitions for the healthcare-shift-left-demo Co
 ├── env.tf                     # Environment (create or use existing)
 ├── kafka.tf                   # Kafka cluster (create or use existing)
 ├── flink.tf                   # Flink compute pool
+├── flink-statements.tf        # Flink SQL statement deployment (DDL/DML)
 ├── outputs.tf                 # Output values
 └── README.md                  # This file
 ```
@@ -26,15 +28,25 @@ This folder contains Terraform definitions for the healthcare-shift-left-demo Co
 ## Prerequisites
 
 1. **Confluent Cloud account** with API access.
-2. **API key and secret** with permissions to create environments, clusters, and Flink compute pools (e.g. OrganizationAdmin, or EnvironmentAdmin + CloudClusterAdmin for the create path).
-3. Set credentials (do not commit `terraform.tfvars`):
+2. **Cloud API key and secret** with permissions to create environments, clusters, and Flink compute pools (e.g. OrganizationAdmin, or EnvironmentAdmin + CloudClusterAdmin for the create path).
+3. **Flink API key and secret** (optional, required for Flink statement deployment):
+   - Create a service account with EnvironmentAdmin permissions
+   - Generate API keys for this service account
+   - Note the service account ID (sa-xxxxx)
+4. Set credentials (do not commit `terraform.tfvars`):
 
    ```sh
-   export TF_VAR_confluent_cloud_api_key="<your-api-key>"
-   export TF_VAR_confluent_cloud_api_secret="<your-api-secret>"
+   # Cloud API credentials (required)
+   export TF_VAR_confluent_cloud_api_key="<your-cloud-api-key>"
+   export TF_VAR_confluent_cloud_api_secret="<your-cloud-api-secret>"
+
+   # Flink API credentials (required for statement deployment)
+   export TF_VAR_flink_api_key="<your-flink-api-key>"
+   export TF_VAR_flink_api_secret="<your-flink-api-secret>"
+   export TF_VAR_flink_principal_id="<service-account-id>"
    ```
 
-   Or copy `terraform.tfvars.example` to `terraform.tfvars` and set `confluent_cloud_api_key` and `confluent_cloud_api_secret` there.
+   Or copy `terraform.tfvars.example` to `terraform.tfvars` and set all credentials there.
 
 ## Create (provision all or attach to existing)
 
@@ -62,8 +74,48 @@ terraform apply -var='environment_id=env-xxxxx' -var='kafka_cluster_id=lkc-xxxxx
 terraform destroy
 ```
 
-- If you **created** the environment and Kafka cluster with this Terraform, they will be destroyed along with the Flink compute pool.
-- If you **used existing** environment and/or Kafka cluster (via variables), only the Flink compute pool (and any other resources this configuration created) are destroyed; the existing environment and cluster are not modified.
+- If you **created** the environment and Kafka cluster with this Terraform, they will be destroyed along with the Flink compute pool and statements.
+- If you **used existing** environment and/or Kafka cluster (via variables), only the Flink compute pool, statements, and any other resources this configuration created are destroyed; the existing environment and cluster are not modified.
+
+## Flink Statement Deployment
+
+This Terraform configuration automatically deploys all Flink SQL statements defined in `../pipelines/inventory.json`.
+
+### Deployment Phases
+
+Statements are deployed in dependency order:
+
+1. **Phase 1: Raw DDL** - Create raw layer tables (hc_raw_patients, hc_raw_devices, hc_raw_prescriptions, hc_device_metrics)
+2. **Phase 2: RMD DDL** - Create RMD layer tables (hc_src_patients, hc_src_devices, hc_src_prescriptions, dim_patients)
+3. **Phase 3: Raw DML** - Start raw layer transformations (INSERT INTO statements)
+4. **Phase 4: RMD DML** - Start RMD layer transformations (INSERT INTO statements)
+
+### Statement Properties
+
+- **DML properties files** (`.properties`): Table-specific Flink session properties are loaded from `.properties` files if they exist alongside the DML SQL files.
+- **Base properties**: All statements use `sql.current-catalog` and `sql.current-database` set to the environment and cluster display names.
+
+### Managing Statements
+
+To skip statement deployment (deploy only infrastructure):
+
+```sh
+terraform apply -var='deploy_flink_statements=false'
+```
+
+To deploy only statements (after infrastructure exists):
+
+```sh
+terraform apply -target=confluent_flink_statement.ddl_raw -target=confluent_flink_statement.ddl_rmd -target=confluent_flink_statement.dml_raw -target=confluent_flink_statement.dml_rmd
+```
+
+### Adding New Tables
+
+1. Add SQL files: Create `ddl.<table>.sql` and `dml.<table>.sql` (optional) in `pipelines/<layer>/<table>/sql-scripts/`
+2. Update inventory: Add table entry to `pipelines/inventory.json`
+3. Apply: Run `terraform apply` to deploy the new statements
+
+The system automatically detects new tables from `inventory.json` and deploys them in the correct order based on their `product_name` (category).
 
 ## Outputs
 
@@ -73,7 +125,10 @@ After apply:
 terraform output
 ```
 
-Useful outputs: `env_id`, `kafka_cluster_id`, `kafka_bootstrap_endpoint`, `kafka_rest_endpoint`, `flink_compute_pool_id`, `flink_rest_endpoint`.
+Useful outputs:
+- Infrastructure: `env_id`, `kafka_cluster_id`, `kafka_bootstrap_endpoint`, `kafka_rest_endpoint`
+- Flink: `flink_compute_pool_id`, `flink_rest_endpoint`
+- Statements: `flink_statements_ddl_raw`, `flink_statements_ddl_rmd`, `flink_statements_dml_raw`, `flink_statements_dml_rmd`
 
 ## Variables summary
 
@@ -81,6 +136,9 @@ Useful outputs: `env_id`, `kafka_cluster_id`, `kafka_bootstrap_endpoint`, `kafka
 |------------------------------|----------|-------------|
 | `confluent_cloud_api_key`    | Yes      | Confluent Cloud API key |
 | `confluent_cloud_api_secret` | Yes      | Confluent Cloud API secret |
+| `flink_api_key`              | Yes*     | Flink API key (required for statement deployment) |
+| `flink_api_secret`           | Yes*     | Flink API secret (required for statement deployment) |
+| `flink_principal_id`         | Yes*     | Service account ID owning the Flink API key |
 | `environment_id`             | No       | Existing environment ID; when set, no environment is created |
 | `kafka_cluster_id`           | No       | Existing Kafka cluster ID; when set, no cluster is created (requires `environment_id`) |
 | `cloud_provider`             | No       | e.g. `AWS` (default) |
@@ -88,3 +146,7 @@ Useful outputs: `env_id`, `kafka_cluster_id`, `kafka_bootstrap_endpoint`, `kafka
 | `prefix`                     | No       | Prefix for created resource names (default `healthcare-demo`) |
 | `flink_compute_pool_name`    | No       | Flink pool display name (default `healthcare-demo-pool`) |
 | `flink_compute_pool_max_cfu` | No       | Max CFU for the pool (default `5`) |
+| `deploy_flink_statements`    | No       | Deploy Flink SQL statements (default `true`) |
+| `statement_name_prefix`      | No       | Prefix for statement names (default `hc-demo`) |
+
+*Required only if `deploy_flink_statements` is `true` (default)

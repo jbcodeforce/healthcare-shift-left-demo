@@ -14,7 +14,7 @@ The worker env vars are **not** in this folder because they are applied when the
 ## Files
 
 - **`debezium-postgres.json`** — Connector config template. Placeholders are replaced by `register-connector.sh` from env (defaults in the script).
-- **`register-connector.sh`** — Waits for Connect, then creates or updates the connector using the JSON (with env substitution). Run from repo root: `./connect/register-connector.sh`. Optionally set `CONNECT_URL` if Connect is not on port 8083.
+- **`register-connector.sh`** — Waits for Connect, then creates or updates the connector using the JSON (with env substitution). Run from repo root: `./connect/register-connector.sh`. Optionally set `CONNECT_URL` if Connect is not on port 8083. To remove the connector first, see **Remove and recreate the connector** below.
 - **`create-topics.sh`** — Creates the Debezium data topic (e.g. `healthcare.public.prescriptions`) via Confluent Cloud CLI to avoid `UNKNOWN_TOPIC_OR_PARTITION`. Run from repo root; requires `ccloud`.
 - **`connect-distributed.properties.example`** — Reference worker config (key/converter, security). The running worker is configured via Compose env, not this file.
 - **`Dockerfile`** — Builds the Connect image (Confluent + Debezium PostgreSQL plugin + custom subject strategy JAR + entrypoint).
@@ -38,6 +38,28 @@ All are optional; defaults are in the script. Source: `backend/.env` (script sou
 | `DEBEZIUM_SLOT_NAME` | `debezium_healthcare_slot` | Replication slot name (unique per connector). |
 
 To override, set in `backend/.env` or export before running `./connect/register-connector.sh`.
+
+### Remove and recreate the connector
+
+`register-connector.sh` only **creates** a missing connector or **updates** config on an existing one; it does not delete. To fully remove and register again:
+
+1. **Delete the connector** via the Connect REST API (set `CONNECT_URL` if Connect is not on port 8083; default connector name is `debezium-postgres-healthcare`):
+
+   ```bash
+   curl -X DELETE "${CONNECT_URL:-http://localhost:8083}/connectors/${DEBEZIUM_CONNECTOR_NAME:-debezium-postgres-healthcare}"
+   ```
+
+   Wait a few seconds, then confirm it is gone: `curl -s "${CONNECT_URL:-http://localhost:8083}/connectors"`.
+
+2. **Optional — Postgres replication slot** — After delete, the replication slot may still exist (default name `debezium_healthcare_slot`, or `DEBEZIUM_SLOT_NAME`). If recreate fails or you want a clean logical replication state, drop the slot while nothing is using it (adjust slot name if you customized it):
+
+   ```bash
+   docker exec -it postgres psql -U demo -d healthcare -c "SELECT pg_drop_replication_slot('debezium_healthcare_slot');"
+   ```
+
+3. **Optional — full offset/history reset** — For a CDC stream from scratch you may also need to clear Debezium’s **database history** Kafka topic and related Connect offsets; only needed in advanced reset scenarios.
+
+4. **Recreate** — From repo root: `./connect/register-connector.sh`. With `snapshot.mode: initial` in `debezium-postgres.json`, re-snapshot behavior after recreate depends on remaining offsets/history; dropping the slot (and history topic if applicable) moves you closer to a true fresh snapshot.
 
 ### Publication and table (required for connector to run)
 

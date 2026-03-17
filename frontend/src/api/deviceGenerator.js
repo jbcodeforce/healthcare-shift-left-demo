@@ -2,6 +2,23 @@
 const baseUrl = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? '' : 'http://localhost:8000')
 const apiBase = baseUrl ? `${baseUrl.replace(/\/$/, '')}` : '/api'
 
+/** Serialize a number for JSON so integers are emitted with .0 (double, not integer). */
+function jsonNumber(n) {
+  const v = Number(n)
+  return Number.isInteger(v) ? `${v}.0` : String(v)
+}
+
+/** Stringify parameters array so parameter_value and parameter_tolerance are always sent as floats (with .0). */
+function stringifyParameters(parameters) {
+  if (parameters == null || !Array.isArray(parameters)) return '[]'
+  const parts = parameters.map((p) => {
+    const value = jsonNumber(p.parameter_value ?? 0)
+    const tolerance = jsonNumber(p.parameter_tolerance ?? 0)
+    return `{"parameter_name":${JSON.stringify(p.parameter_name ?? '')},"parameter_value":${value},"parameter_type":${JSON.stringify(p.parameter_type ?? 'float')},"parameter_tolerance":${tolerance}}`
+  })
+  return '[' + parts.join(',') + ']'
+}
+
 export async function getPatients() {
   const res = await fetch(`${apiBase}/patients`)
   if (!res.ok) throw new Error(`Patients failed: ${res.status}`)
@@ -41,7 +58,7 @@ export async function createPrescription(body) {
     medication_or_therapy: body.medicationOrTherapy ?? '',
     start_date: body.startDate ?? null,
     end_date: body.endDate ?? null,
-    parameters: typeof body.parameters === 'string' ? body.parameters : JSON.stringify(body.parameters ?? []),
+    parameters: typeof body.parameters === 'string' ? body.parameters : stringifyParameters(body.parameters ?? []),
   }
   const res = await fetch(`${apiBase}/prescriptions`, {
     method: 'POST',
@@ -66,7 +83,7 @@ export async function updatePrescription(prescriptionId, body) {
   if (body.startDate !== undefined) payload.start_date = body.startDate
   if (body.endDate !== undefined) payload.end_date = body.endDate
   if (body.parameters !== undefined) {
-    payload.parameters = typeof body.parameters === 'string' ? body.parameters : JSON.stringify(body.parameters)
+    payload.parameters = typeof body.parameters === 'string' ? body.parameters : stringifyParameters(body.parameters)
   }
   const res = await fetch(`${apiBase}/prescriptions/${encodeURIComponent(prescriptionId)}`, {
     method: 'PUT',

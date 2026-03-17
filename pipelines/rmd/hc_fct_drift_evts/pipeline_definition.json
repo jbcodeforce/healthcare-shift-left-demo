@@ -1,10 +1,10 @@
 {
-   "table_name": "raw_prescriptions",
-   "product_name": "raw",
+   "table_name": "No-Table",
+   "product_name": "rmd",
    "type": "unknown-type",
-   "dml_ref": "pipelines/raw/raw_prescriptions/sql-scripts/dml.raw_prescriptions.sql",
-   "ddl_ref": "pipelines/raw/raw_prescriptions/sql-scripts/ddl.raw_prescriptions.sql",
-   "path": "pipelines/raw/raw_prescriptions",
+   "dml_ref": "pipelines/rmd/hc_fct_drift_evts/sql-scripts/dml.hc_fct_drift_evts.properties",
+   "ddl_ref": "pipelines/rmd/hc_fct_drift_evts/sql-scripts/ddl.hc_fct_drift_evts.sql",
+   "path": "pipelines/rmd/hc_fct_drift_evts",
    "complexity": {
       "number_of_regular_joins": 0,
       "number_of_left_joins": 0,

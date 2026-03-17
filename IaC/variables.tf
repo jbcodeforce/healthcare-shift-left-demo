@@ -59,3 +59,39 @@ variable "flink_compute_pool_max_cfu" {
   type        = number
   default     = 5
 }
+
+# Flink API credentials (for deploying statements)
+
+variable "flink_api_key" {
+  description = "Flink API key (for Flink statement deployment)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "flink_api_secret" {
+  description = "Flink API secret (for Flink statement deployment)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "flink_principal_id" {
+  description = "Service account ID that owns the Flink API key"
+  type        = string
+  default     = ""
+}
+
+# Flink statement deployment options
+
+variable "deploy_flink_statements" {
+  description = "Whether to deploy Flink SQL statements (DDL/DML)"
+  type        = bool
+  default     = true
+}
+
+variable "statement_name_prefix" {
+  description = "Prefix for Flink statement names"
+  type        = string
+  default     = "hc-demo"
+}

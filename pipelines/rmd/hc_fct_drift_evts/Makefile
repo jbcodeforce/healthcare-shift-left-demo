@@ -1,8 +1,8 @@
 include ../../../common.mk
 
-# --- raw_prescriptions
-TABLE_NAME=raw_prescriptions
-SCRIPT_PRE_KEBAB=dev-usw2-raw
+# --- hc_fct_drift_evts
+TABLE_NAME=hc_fct_drift_evts
+SCRIPT_PRE_KEBAB=dev-usw2-rmd
 SCRIPT_POST_KEBAB=$(subst _,-,$(TABLE_NAME))
 
 DDL_STATEMENT=$(SCRIPT_PRE_KEBAB)-ddl-$(SCRIPT_POST_KEBAB)
@@ -14,7 +14,7 @@ DML_PROPERTIES=./sql-scripts/dml.$(TABLE_NAME).properties
 DML_TESTS_SCRIPT=./tests/dml.$(TABLE_NAME).sql
 
 # --- Entry point
-create_raw_prescriptions: create_flink_ddl  create_flink_dml
+create_hc_fct_drift_evts: create_flink_ddl  create_flink_dml
 
 
 # --- Topic used as source

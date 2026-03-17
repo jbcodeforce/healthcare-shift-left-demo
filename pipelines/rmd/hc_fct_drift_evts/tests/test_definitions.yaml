@@ -1,0 +1,30 @@
+foundations:
+- table_name: hc_device_metrics
+  ddl_for_test: ./tests/ddl_hc_device_metrics.sql
+- table_name: hc_src_prescriptions
+  ddl_for_test: ./tests/ddl_hc_src_prescriptions.sql
+test_suite:
+- name: test_hc_fct_drift_evts_1
+  inputs:
+  - table_name: hc_device_metrics
+    file_name: ./tests/insert_hc_device_metrics_1.sql
+    file_type: sql
+  - table_name: hc_src_prescriptions
+    file_name: ./tests/insert_hc_src_prescriptions_1.sql
+    file_type: sql
+  outputs:
+  - table_name: hc_fct_drift_evts
+    file_name: ./tests/validate_hc_fct_drift_evts_1.sql
+    file_type: sql
+- name: test_hc_fct_drift_evts_2
+  inputs:
+  - table_name: hc_device_metrics
+    file_name: ./tests/insert_hc_device_metrics_2.sql
+    file_type: sql
+  - table_name: hc_src_prescriptions
+    file_name: ./tests/insert_hc_src_prescriptions_2.sql
+    file_type: sql
+  outputs:
+  - table_name: hc_fct_drift_evts
+    file_name: ./tests/validate_hc_fct_drift_evts_2.sql
+    file_type: sql

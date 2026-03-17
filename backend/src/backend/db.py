@@ -139,7 +139,9 @@ def get_prescriptions_from_db() -> list[dict[str, Any]] | None:
                 """
             )
             rows = cur.fetchall()
-        return [_row_to_prescription(r) for r in rows]
+        result = [_row_to_prescription(r) for r in rows]
+        logger.debug("get_prescriptions_from_db returned %d rows", len(result))
+        return result
     except Exception as e:
         logger.warning("Get prescriptions from DB failed: %s", e)
         return None
@@ -182,6 +184,7 @@ def create_prescription(row: dict[str, Any]) -> dict[str, Any] | None:
     try:
         device_id = row.get("deviceId", "")
         prescription_id = f"RX-{device_id}-{_short_id(4)}"
+        logger.debug("create_prescription attempting insert prescription_id=%s device_id=%s", prescription_id, device_id)
         with conn.cursor() as cur:
             cur.execute(
                 """

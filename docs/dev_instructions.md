@@ -9,16 +9,6 @@ This document describes:
 It is intended for developers who need to modify or extend this code base.
 
 ---
-
-## Table of contents
-
-1. [Prerequisites](#prerequisites)
-2. [How to run the demo](#how-to-run-the-demo)
-3. [Running Kafka Connect](#running-kafka-connect)
-4. [Code structure](#code-structure)
-5. [Solution design](#solution-design)
-
----
 ## Understanding the main components
 
 From the figure below, the green components run locally with docker compose, the Confluent Environment, Kafka cluster, Flink Compute pools, Terraform are created via Terraform, and the S3 bucket, IAM role and access policies are done using AWS concole.
@@ -62,7 +52,6 @@ cp backend/.env.example backend/.env
 
 For **PostgreSQL** (prescriptions CRUD and Debezium), the Compose stack uses `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` (defaults: `demo`, `demo`, `healthcare`). For local backend dev, set `DATABASE_URL=postgresql://demo:demo@localhost:5432/healthcare` (or match your Postgres credentials if you change them).
 
----
 
 ## How to run the demo
 
@@ -147,6 +136,10 @@ Kafka Connect (with the Debezium PostgreSQL connector) streams changes from the 
 
 **Manual run:**
 
+1. Create the target topic with script, as the debezium does not seem to create the topic automatically
+   ```sh
+   ```
+
 1. **Start Connect** (from repo root, with `backend/.env` containing Kafka and Schema Registry vars):
    ```bash
    docker compose --env-file backend/.env up -d kafka-connect
@@ -176,7 +169,6 @@ Kafka Connect (with the Debezium PostgreSQL connector) streams changes from the 
 
 **Publication (required for Debezium):** The connector uses the existing publication `debezium_healthcare` for `public.prescriptions`. Postgres init scripts (`postgres/init.d/01-prescriptions-schema.sql` and `02-debezium-replication.sh`) create the table and publication on first start. If you had Postgres running before that, create the publication manually: `docker exec -it postgres psql -U demo -d healthcare -c "CREATE PUBLICATION IF NOT EXISTS debezium_healthcare FOR TABLE public.prescriptions;"`. See `connect/README.md` for full troubleshooting.
 
-**Topic pre-creation:** If the connector logs `UNKNOWN_TOPIC_OR_PARTITION` for `healthcare.public.prescriptions`, create the topic before (or after) starting the connector. With Confluent Cloud CLI: `ccloud kafka topic create healthcare.public.prescriptions --partitions 1`. Or run `./connect/create-topics.sh` (requires `ccloud`). See `connect/README.md` for topic naming.
 
 **Troubleshooting (Connect not visible on port 8083):**
 
@@ -186,11 +178,6 @@ Kafka Connect (with the Debezium PostgreSQL connector) streams changes from the 
 - **Reachability:** From the host, use `curl -s http://localhost:8083/connectors`. If that fails, the container may still be starting (healthcheck allows a 45s start period) or the worker may have crashed—check logs as above.
 
 - **401 Unauthorized when registering Avro schema:** The Connect worker must send Schema Registry credentials when the Avro converter registers schemas. The Compose file sets `CONNECT_*_SCHEMA_REGISTRY_BASIC_AUTH_CREDENTIALS_SOURCE=USER_INFO` so the converter uses the provided user info. Ensure `SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO` in `backend/.env` is the **Schema Registry** API key and secret in the form `key:secret` (Confluent Cloud uses a dedicated Schema Registry API key, not the Kafka cluster API key). If the secret contains colons or special characters, use single quotes in `.env`, e.g. `SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO='sr_key:sr_secret'`. Restart the Connect container after changing `.env`: `docker compose --env-file backend/.env up -d kafka-connect --force-recreate`.
-
-### Frontend API base URL
-
-- **Dev (Vite):** The app uses `apiBase = '/api'` when `VITE_API_URL` is not set; Vite proxies `/api` to the backend (see `frontend/vite.config.js`).
-- **Production / custom backend:** Set `VITE_API_URL` (e.g. in `frontend/.env`) to the backend origin (e.g. `http://localhost:8000`).
 
 ---
 
@@ -239,12 +226,8 @@ healthcare-shift-left-demo/
 
 **Key APIs:**
 
-- `GET /health` — liveness.
-- `GET /patients`, `GET /devices` — demo data.
-- `GET /prescriptions`, `GET /prescriptions/{id}`, `POST /prescriptions`, `PUT /prescriptions/{id}`, `DELETE /prescriptions/{id}` — prescriptions (require Postgres).
-- `GET /simulation/status`, `POST /simulation/start`, `POST /simulation/stop` — simulation control.
-- `GET /telemetry/metrics` — last N cached telemetry records (for charts).
-- `GET /telemetry/stream` — Server-Sent Events stream of live telemetry.
+
+See last version of the OpenAPI doc [at localhost:8000/docs](http://localhost:8000/docs)
 
 ### Frontend (`frontend/src/`)
 
@@ -278,6 +261,13 @@ Used with the shift-left tool (see README) for deployment. Not required for runn
 - **register-connector.sh** — Registers the Debezium PostgreSQL connector (`debezium-postgres-healthcare`) with Kafka Connect using `backend/.env` for Postgres and Connect URL.
 - **debezium-postgres.json** — Connector config (topic prefix `healthcare`, table `prescriptions`).
 - **Dockerfile** — Kafka Connect image with Debezium.
+
+
+### cleaning everything
+
+From the repo root, **`./clean_all.sh`** stops anything on ports **8000** and **5173**, runs **`docker compose down -v`** (wipes the Postgres volume), removes **`backend/.venv`** and **`.venv`**, and—if **`shift_left`** is on your **`PATH`**—runs **`shift_left pipeline undeploy`** for each fact tables. Source **`set_j9r_env_sl`** (or set **`FLINK_COMPUTE_POOL_ID`**) before running if undeploy needs Confluent credentials.
+
+- **`./clean_all.sh --keep-volumes`** — same as above but **`docker compose down`** without **`-v`** (keeps Postgres data).
 
 ---
 
@@ -433,15 +423,6 @@ main.py
 - Prescriptions are created/updated/deleted via API and stored in Postgres. If `DATABASE_URL` is not set, the API can still serve in-memory demo prescriptions (no CRUD).
 - When Kafka Connect and the Debezium connector are running, inserts/updates/deletes on the prescriptions table are captured and published to Kafka. Flink (or other consumers) can join this stream with device telemetry to detect “prescription drift” (e.g. telemetry outside target ± tolerance).
 
-### Design choices
-
-- **Single backend** as the gateway for the frontend: no direct Kafka or DB access from the browser; simpler auth and CORS.
-- **SSE for live telemetry** so the UI can show a real-time stream without polling; **polling** is used only for the metrics charts (`/telemetry/metrics`) to keep implementation simple and avoid overloading the SSE path.
-- **In-memory telemetry cache** so the metrics API does not depend on Kafka consumer lag or external storage; it reflects exactly what the simulator has sent recently.
-- **Avro + Schema Registry** for Kafka so Confluent Cloud and Flink can use consistent schemas for `device_metrics` and CDC topics.
-
-For domain model (Patient, Device, Prescription, DeviceTelemetry, drift alerts) and Flink use cases (compliance alerting, device health), see the main [README](../README.md).
-
 
 --- 
 ## Deployment
@@ -458,3 +439,5 @@ shift_left pipeline deploy --table-name device_metrics --compute-pool-id $FLINK_
 shift_left pipeline deploy --table-name raw_devices --compute-pool-id $FLINK_COMPUTE_POOL_ID
 shift_left pipeline deploy --table-name raw_patients --compute-pool-id $FLINK_COMPUTE_POOL_ID
 ```
+
+## 

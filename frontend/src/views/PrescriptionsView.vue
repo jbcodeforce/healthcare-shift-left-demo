@@ -40,20 +40,34 @@ function parseParameters(str) {
   }
 }
 
+/** Get parameter value by name from a prescription's parameters array. */
+function paramValue(params, name) {
+  const p = params.find((x) => x.parameter_name === name)
+  return p != null ? p.parameter_value : null
+}
+
 function groupedPrescriptions() {
   const list = prescriptions.value
   const deviceList = devices.value
   const byId = new Map(deviceList.map((d) => [d.device_id, d]))
-  return list.map((r) => ({
-    deviceId: r.deviceId,
-    patientId: r.patientId,
-    prescriptionId: r.prescriptionId,
-    medicationOrTherapy: r.medicationOrTherapy,
-    startDate: r.startDate,
-    endDate: r.endDate,
-    parametersArray: parseParameters(r.parameters),
-    device: byId.get(r.deviceId) ?? null,
-  }))
+  return list.map((r) => {
+    const parametersArray = parseParameters(r.parameters)
+    const device = byId.get(r.deviceId) ?? null
+    return {
+      deviceId: r.deviceId,
+      patientId: r.patientId,
+      prescriptionId: r.prescriptionId,
+      medicationOrTherapy: r.medicationOrTherapy,
+      startDate: r.startDate,
+      endDate: r.endDate,
+      parametersArray,
+      device,
+      // Header summary from this prescription's parameters (not the device record)
+      pressureSetting: paramValue(parametersArray, 'Pressure') ?? device?.pressureSetting,
+      flowRateSetting: paramValue(parametersArray, 'FlowRate') ?? device?.flowRateSetting,
+      flowLevel: paramValue(parametersArray, 'Level') ?? paramValue(parametersArray, 'FlowLevel') ?? device?.flowLevel,
+    }
+  })
 }
 
 const grouped = computed(() => groupedPrescriptions())
@@ -215,8 +229,8 @@ onMounted(loadPrescriptions)
             <td colspan="8">
               <strong>{{ group.deviceId }}</strong>
               <span class="device-meta"> — Patient {{ group.patientId }}</span>
-              <span v-if="group.device" class="device-meta">
-                · Pressure {{ group.device.pressureSetting }} · Flow {{ group.device.flowRateSetting }} · Level {{ group.device.flowLevel }}
+              <span v-if="group.pressureSetting != null || group.flowRateSetting != null || group.flowLevel != null" class="device-meta">
+                · Pressure {{ group.pressureSetting }} · Flow {{ group.flowRateSetting }} · Level {{ group.flowLevel }}
               </span>
               <button
                 v-if="!error"

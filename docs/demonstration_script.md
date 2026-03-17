@@ -15,6 +15,12 @@ Once the WebApplication is started, all the demonstration happens in this applic
 
 ## 2- Review the pipeline processing
 
+The pipeline structure looks like:
+![]()
+
+### Bronze layer
+
+
 ### 2.1 Envelop processing
 
 Debezium CDC connectors automatically register the message schema when writing to Kafka topics. Using Debezium CDC, the schema structure will include before, after, timestamp, op and sources fields:
@@ -63,6 +69,36 @@ In Confluent Flink there are two options to manage those envelops:
     FROM deduped
     WHERE rn = 1
     ```
+
+### 2.2 Deduplication
+
+* Upsert changelog.mode will remove any duplicate per key. No need to do the row_number() pattern
+* Still it may be relevant to use this pattern some time to time, specially if some deduplication needs to be done on specific field out side of the primary key of the sink table.
+
+### 2.3 Analyze CDC processing
+
+1. Verify current state of the Patients Dimension
+    ```sql
+    select * from hc_dim_patients
+    ```
+
+    ![](./images/dim_patients.png)
+
+1. Create a new prescription from the User interface: Be sure to select the good device for the patient. (this will be a user interface improvement to be done)
+    ![](./images/new_prescription.png)
+
+
+    If you use a SQL query on top of the Postgresql Database, we can see a new row was added:
+    ![](./images/pg_presc_table.png)
+
+    We can verify in Confluent Cloud the topic has the new record:
+    ```sql
+    select * from `healthcare.public.prescriptions`
+    ```
+
+    ![](./images/cdc_topic_content.png)
+
+
 
 ## 3- The first data analytic product
 

@@ -1,4 +1,4 @@
-## Fact Table: raw_prescriptions
+## Fact Table: dim_patients
 
 Status date:
 

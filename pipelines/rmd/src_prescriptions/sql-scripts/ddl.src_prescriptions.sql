@@ -7,11 +7,10 @@ CREATE TABLE IF NOT EXISTS hc_src_prescriptions (
   target_value          DOUBLE COMMENT 'e.g. 2.5 (Liters per minute)',
   tolerance_range       DOUBLE COMMENT 'Acceptable +/- e.g. 0.5',
   start_date            BIGINT COMMENT 'Start (epoch ms)',
-  end_date              BIGINT COMMENT 'End (epoch ms)',
-  PRIMARY KEY (prescription_id) NOT ENFORCED
+  end_date              BIGINT COMMENT 'End (epoch ms)'
 ) DISTRIBUTED BY HASH(prescription_id) INTO 1 BUCKETS
 WITH (
-  'changelog.mode' = 'upsert',
+  'changelog.mode' = 'append',
   'key.avro-registry.schema-context' = '.flink-dev',
   'value.avro-registry.schema-context' = '.flink-dev',
   'key.format' = 'avro-registry',

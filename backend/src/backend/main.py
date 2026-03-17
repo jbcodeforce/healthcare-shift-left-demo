@@ -114,6 +114,14 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log each request method, path, and response status (no body/PII)."""
+    response = await call_next(request)
+    logger.info("%s %s %s", request.method, request.url.path, response.status_code)
+    return response
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -221,7 +229,7 @@ def get_prescription(prescription_id: str) -> dict:
     return row
 
 
-@app.post("/prescriptions/")
+@app.post("/prescriptions", status_code=201)
 def create_prescription_endpoint(body: PrescriptionCreate) -> dict:
     """Create a new prescription. Requires PostgreSQL."""
     _prescriptions_db_required()

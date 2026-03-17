@@ -7,6 +7,30 @@
         "ddl_ref": "pipelines/raw/device_metrics/sql-scripts/ddl.device_metrics.sql",
         "table_folder_name": "pipelines/raw/device_metrics"
     },
+    "hc_dim_patients": {
+        "table_name": "hc_dim_patients",
+        "product_name": "rmd",
+        "type": "unknown-type",
+        "dml_ref": "pipelines/rmd/dim_patients/sql-scripts/dml.dim_patients.sql",
+        "ddl_ref": "pipelines/rmd/dim_patients/sql-scripts/ddl.dim_patients.sql",
+        "table_folder_name": "pipelines/rmd/dim_patients"
+    },
+    "hc_fct_drift_evts": {
+        "table_name": "hc_fct_drift_evts",
+        "product_name": "rmd",
+        "type": "unknown-type",
+        "dml_ref": "pipelines/rmd/hc_fct_drift_evts/sql-scripts/dml.hc_fct_drift_evts.sql",
+        "ddl_ref": "pipelines/rmd/hc_fct_drift_evts/sql-scripts/ddl.hc_fct_drift_evts.sql",
+        "table_folder_name": "pipelines/rmd/hc_fct_drift_evts"
+    },
+    "hc_fct_telemetry_5m": {
+        "table_name": "hc_fct_telemetry_5m",
+        "product_name": "rmd",
+        "type": "unknown-type",
+        "dml_ref": "pipelines/rmd/hc_fct_telemetries/sql-scripts/dml.hc_fct_telemetry_5m.sql",
+        "ddl_ref": "pipelines/rmd/hc_fct_telemetries/sql-scripts/ddl.hc_fct_compliance_1h.sql",
+        "table_folder_name": "pipelines/rmd/hc_fct_telemetries"
+    },
     "hc_raw_devices": {
         "table_name": "hc_raw_devices",
         "product_name": "raw",
@@ -23,19 +47,11 @@
         "ddl_ref": "pipelines/raw/raw_patients/sql-scripts/ddl.raw_patients.sql",
         "table_folder_name": "pipelines/raw/raw_patients"
     },
-    "hc_raw_prescriptions": {
-        "table_name": "hc_raw_prescriptions",
-        "product_name": "raw",
-        "type": "unknown-type",
-        "dml_ref": "pipelines/raw/raw_prescriptions/sql-scripts/dml.raw_prescriptions.sql",
-        "ddl_ref": "pipelines/raw/raw_prescriptions/sql-scripts/ddl.raw_prescriptions.sql",
-        "table_folder_name": "pipelines/raw/raw_prescriptions"
-    },
     "hc_src_devices": {
         "table_name": "hc_src_devices",
         "product_name": "rmd",
         "type": "unknown-type",
-        "dml_ref": "pipelines/rmd/src_devices/sql-scripts/dml.src_devices.properties",
+        "dml_ref": "pipelines/rmd/src_devices/sql-scripts/dml.src_devices.sql",
         "ddl_ref": "pipelines/rmd/src_devices/sql-scripts/ddl.src_devices.sql",
         "table_folder_name": "pipelines/rmd/src_devices"
     },
@@ -51,7 +67,7 @@
         "table_name": "hc_src_prescriptions",
         "product_name": "rmd",
         "type": "unknown-type",
-        "dml_ref": "pipelines/rmd/src_prescriptions/sql-scripts/dml.src_prescriptions.properties",
+        "dml_ref": "pipelines/rmd/src_prescriptions/sql-scripts/dml.src_prescriptions.sql",
         "ddl_ref": "pipelines/rmd/src_prescriptions/sql-scripts/ddl.src_prescriptions.sql",
         "table_folder_name": "pipelines/rmd/src_prescriptions"
     }

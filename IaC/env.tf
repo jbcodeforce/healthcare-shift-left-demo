@@ -14,5 +14,5 @@ resource "confluent_environment" "env" {
 
 locals {
   environment_id   = local.use_existing_env ? var.environment_id : confluent_environment.env[0].id
-  env_display_name = local.use_existing_env ? null : confluent_environment.env[0].display_name
+  env_display_name = local.use_existing_env ? (length(data.confluent_environment.existing) > 0 ? data.confluent_environment.existing[0].display_name : "") : confluent_environment.env[0].display_name
 }
