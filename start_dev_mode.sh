@@ -15,7 +15,7 @@ if [ -f "$BACKEND_DIR/.env" ]; then
   set -a; source "$BACKEND_DIR/.env" 2>/dev/null; set +a
 fi
 CONNECTOR_NAME="${DEBEZIUM_CONNECTOR_NAME:-debezium-postgres-healthcare}"
-
+DATA_TOPIC="${DEBEZIUM_TOPIC_PREFIX:-healthcare}.public.prescriptions"
 
 # Colors for output
 RED='\033[0;31m'
@@ -69,9 +69,15 @@ check_requirements() {
         missing=1
     fi
     
+    if ! command -v confluent &> /dev/null; then
+        echo -e "${RED}Error: 'confluent' is not installed${NC}"
+        missing=1
+    fi
+
     if [ $missing -eq 1 ]; then
         exit 1
     fi
+
 }
 
 
@@ -147,6 +153,16 @@ connector_is_defined() {
     curl -sf "${CONNECT_URL}/connectors/${CONNECTOR_NAME}" > /dev/null 2>&1
 }
 
+verify_topics() {
+    echo -e "\n${GREEN}Verifying topics...${NC}"
+    if ! confluent kafka topic list --environment $ENV_ID --cluster $KAFKA_CLUSTER_ID | grep -q "${DATA_TOPIC}"; then
+        echo -e "  ${YELLOW}Topic ${DATA_TOPIC} not found. Creating...${NC}"
+        ./connect/create-topics.sh
+    else
+        echo -e "  ${GREEN}Topic ${DATA_TOPIC} found.${NC}"
+    fi
+}
+
 # Ensure Kafka Connect is running and the Debezium connector is registered.
 # Requires backend/.env with Kafka/Schema Registry vars. Skips if .env missing or Connect fails to start.
 ensure_kafka_connect() {
@@ -200,6 +216,7 @@ ensure_kafka_connect() {
 check_requirements
 cd "$PROJECT_ROOT"
 start_postgres
+verify_topics
 ensure_kafka_connect
 start_backend
 start_frontend

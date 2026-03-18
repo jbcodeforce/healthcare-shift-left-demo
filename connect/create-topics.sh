@@ -18,13 +18,15 @@ PREFIX="${DEBEZIUM_TOPIC_PREFIX:-healthcare}"
 DATA_TOPIC="${PREFIX}.public.prescriptions"
 PARTITIONS="${DEBEZIUM_TOPIC_PARTITIONS:-1}"
 
-if ! command -v ccloud &>/dev/null; then
-  echo "Confluent Cloud CLI (ccloud) not found. Install it or create the topic manually:"
+if ! command -v confluent &>/dev/null; then
+  echo "Confluent CLI (confluent) not found. Install it or create the topic manually:"
   echo "  Topic: ${DATA_TOPIC}"
   echo "  Partitions: ${PARTITIONS}"
+  echo "  Environment: ${ENV_ID}"
+  echo "  Cluster: ${KAFKA_CLUSTER_ID}"
   exit 1
 fi
 
-echo "Creating topic ${DATA_TOPIC} (partitions=${PARTITIONS})..."
-ccloud kafka topic create "${DATA_TOPIC}" --partitions "${PARTITIONS}" 2>/dev/null || true
+echo "Creating topic ${DATA_TOPIC} (partitions=${PARTITIONS}) in environment ${ENV_ID} and cluster ${KAFKA_CLUSTER_ID}..."
+confluent kafka topic create ${DATA_TOPIC} --partitions ${PARTITIONS} --if-not-exists --environment $ENV_ID --cluster $KAFKA_CLUSTER_ID 2>/dev/null || true
 echo "Done. Restart the Debezium connector if it was failing with UNKNOWN_TOPIC_OR_PARTITION."
