@@ -4,41 +4,103 @@ Once the WebApplication is started, all the demonstration happens in this applic
 
 ## 1- Review the Domain
 
-1. We have fake patients (few of them as the volume is not the scope of the demonstration)
+* We have fake patients (few of them as the volume is not the scope of the demonstration)
+<figure markdown="span">
     ![](./images/patients_view.png)
+</figure>
 
-1. We have a set of devices assigned to patient with 3 major parameters. Those parameters will be used during the simulation to detect anomaly, and work with real-time telemetries.
+* We have a set of devices assigned to patient with 3 major parameters. Those parameters will be used during the simulation to detect anomaly, and work with real-time telemetries.
+<figure markdown="span">
     ![](./images/devices_view.png)
+</figure>
 
-1. Doctors have set prescriptions to patient that will specify device configuration. A prescription is simply modeled as defining the setting for the different parameters.
+* Doctors have set prescriptions to patient that will specify device configuration. A prescription is simply modeled as defining the setting for the different parameters.
+<figure markdown="span">
     ![](./images/prescriptions_view.png)
+</figure>
 
+For example Patient P002m has the device Dev-P002 assigned, with the settings of Pressure=11, FlowRate of 2.7 and motorspeed 60
 ## 2- Review the pipeline processing
 
-The pipeline structure looks like:
-![]()
+The git repository includes the pipeline folder, which maps the medaillon structure with `src_, fct_` like:
 
-### Bronze layer
+```sh
+pipelines
+├── inventory.json
+├── raw
+│   ├── device_metrics
+│   │   ├── sql-scripts
+│   │   │   ├── ddl.device_metrics.sql
+│   │   │   └── dml.device_metrics.sql
+│   ├── raw_devices
+│   │   ├── sql-scripts
+│   │   │   ├── ddl.raw_devices.sql
+│   │   │   └── dml.raw_devices.sql
+│   └── raw_patients
+│       ├── sql-scripts
+│       │   ├── ddl.raw_patients.sql
+│       │   └── dml.raw_patients.sql
+└── rmd
+    ├── dim_patients
+    │   ├── sql-scripts
+    │   │   ├── ddl.dim_patients.sql
+    │   │   └── dml.dim_patients.sql
+    ├── hc_fct_drift_evts
+    │   ├── sql-scripts
+    │   │   ├── ddl.hc_fct_drift_evts.sql
+    │   │   └── dml.hc_fct_drift_evts.sql
+    ├── hc_fct_telemetries
+    │   ├── sql-scripts
+    │   │   ├── ddl.hc_fct_telemetry_1h.sql
+    │   │   ├── dml.hc_fct_telemetry_1h.sql
+    ├── src_devices
+    │   ├── sql-scripts
+    │   │   ├── ddl.src_devices.sql
+    │   │   └── dml.src_devices.sql
+    ├── src_patients
+    │   ├── sql-scripts
+    │   │   ├── ddl.src_patients.sql
+    │   │   └── dml.src_patients.sql
+    └── src_prescriptions
+        ├── sql-scripts
+        │   ├── ddl.src_prescriptions.sql
+        │   └── dml.src_prescriptions.sql
+```
 
+The folder `rmd` represents a way to organize by data product.
 
-### 2.1 Envelop processing
+### 2.1 The Debezium Connector
 
-Debezium CDC connectors automatically register the message schema when writing to Kafka topics. Using Debezium CDC, the schema structure will include before, after, timestamp, op and sources fields:
+Once the Souce connector is started, the connector creates 3 topics (hidden) to manage the metadata of the connectors processing. The Postgresql `prescriptions` table is injected in to the topic `healthcare.public.prescriptions`:
+
+![](./images/first_topics.png)
+
+The Avro schemas for the keys and values are in the schema registry, and in Flink Workspace, a query like:
+```sql
+show create table `healthcare.public.prescriptions`;
+``` 
+
+presents the schema definition, like a DDL query.
+
+### 2.1 Debezium Envelop Processing
+
+Debezium CDC connectors automatically registers the message schema when writing to Kafka topics. Using Debezium CDC, the schema structure will include before, after, timestamp, op and sources fields:
 
 ![](./images/patient_envelop.png)
 
 In Confluent Flink there are two options to manage those envelops:
-1. Use the `avro-debezium-registry` serialization: [to automatically detect and interpret this envelope structure based on the schema in Confluent Schema Registry.](https://docs.confluent.io/cloud/current/flink/reference/serialization.html#debezium-format). The `healthcare.public.prescriptions` has the `value.format` set to 'avro-debezium-registry' automatically. Its changelog mode is also set to Retract
+
+* a/Use the `avro-debezium-registry` serialization: [to automatically detect and interpret this envelope structure based on the schema in Confluent Schema Registry.](https://docs.confluent.io/cloud/current/flink/reference/serialization.html#debezium-format). The `healthcare.public.prescriptions` has the `value.format` set to 'avro-debezium-registry' automatically. Its changelog mode is also set to `retract`:
     ```sql
     show create table `healthcare.public.prescriptions`
     ```
 
-    A select from returns the expected record content:
+A `select from` query returns the expected record content:
     
-    ![](./images/hc_cdc_prescriptions.png)
+![](./images/hc_cdc_prescriptions.png)
 
-    Retract mode is not compatible with the after.state.only option of Debezium connectors.
-1. Use the envelop to keep changelog mode ot append only, and the delete operation need to be propagated to the downstream processing.
+
+* b/ Use the envelop to keep changelog mode to append only, and when the delete operation needs to be propagated to the downstream processing:
     ```sql
     INSERT INTO hc_src_patients
     WITH normalized AS (
@@ -72,10 +134,14 @@ In Confluent Flink there are two options to manage those envelops:
 
 ### 2.2 Deduplication
 
-* Upsert changelog.mode will remove any duplicate per key. No need to do the row_number() pattern
-* Still it may be relevant to use this pattern some time to time, specially if some deduplication needs to be done on specific field out side of the primary key of the sink table.
+* `changelog.mode=upsert` will remove any duplicate per key. No need to use the `row_number()` pattern
+* Still it may be relevant to use the `row_number()` pattern when deduplication needs to be done on specific field outside of the primary key of the sink table, or when the delete needs to be propagaged to the sink, like a parquet table.
 
 ### 2.3 Analyze CDC processing
+As an example, we will take the following pipeline:
+<figure markdown="span">
+![](./images/dim_to_raw_pipe.png)
+</figure>
 
 1. Verify current state of the Patients Dimension
     ```sql

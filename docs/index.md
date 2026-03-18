@@ -21,15 +21,28 @@ The audiance of this demonstration is data engineers to understand the art of fe
 
 The figure below presents the production deployment of data streaming pipelines from processing raw data to silver or gold records. The pipeline processing is done using Confluent Cloud Flink SQL queries. 
 
+<figure markdown="span">
 ![](./images/pipeline-view.drawio.png)
+</figure>
 
-In the demonstration only Prescriptions are using CDC.
+In this demonstration only Prescription entities are using CDC. The landign zone represents the raw data, while a first layer of Flink processing helps to prepare silver data, with deduplication, schema transformation and filtering.
+
+This diagram also presents a second layer of Flink statements to prepare facts and dimensions as data as a product.
 
 ### Demonstration Components
 
+Applying this pipeline architecture to a deployment architecture, the Flink and Topics are running in Confluent Cloud. Sink tables used for Lake house platform are saved in parquet format, with Apache Iceberg metadata, in a Cloud Provider object storage layer.
+<figure markdown="span">
 ![](./images/demo_components.drawio.png)
+</figure>
+The green components are for demonstration purpose and will run on your laptop.
 
-### Features
+Here is an example of the WebApp home pag, with e sidebar to navigate into the demonstration steps:
+<figure markdown="span">
+![](./images/home_page.png)
+</figure>
+
+### Demonstration Features
 
 * **Backend (FastAPI)** — REST API for patients, devices, and prescriptions; health check; device simulation (start/stop, all or single patient); device telemetry streamed via Server-Sent Events (SSE) and produced to Confluent Cloud Kafka (Avro + Schema Registry).
 * **PostgreSQL** — Prescriptions stored in Postgres with logical decoding enabled (`wal_level=logical`) for CDC. One row per prescription; parameters stored as JSON.
@@ -49,7 +62,9 @@ As part of moving from batch to real-time processing the following dimensions an
 |-------|-------------|-----------|
 | dim_patients | one row per patient (with device and current prescription-derived settings: pressure, flow rate, flow level | [dml.dim_patients.sql](./pipelines/rmd/dim_patients/sql-scripts/dml.dim_patients.sql) | 
 | fact_drift_events | Assess devise metric vs prescription, one row per drift alert  | [dml.hc_fct_drift_evts.sql](./pipelines/rmd/hc_fct_drift_evts/sql-scripts/dml.hc_fct_drift_evts.sql) |
-| Telemetry Facts | fact_telemetry_1h: windowed aggregates per device/patient/metric. fact_compliance_1h: in-range vs total readings (and optionally compliance_pct) per window. | [](./pipelines/rmd/hc_fct_telemetries/sql-scripts/dml.hc_fct_telemetry_1h.sql) |
+| Telemetry Facts | fact_telemetry_1h: windowed aggregates per device/patient/metric. fact_compliance_1h: in-range vs total readings (and optionally compliance_pct) per window. | [dml.hc_fct_telemetry_1h.sql](./pipelines/rmd/hc_fct_telemetries/sql-scripts/dml.hc_fct_telemetry_1h.sql) |
+
+To support the demonstration of how those facts are created, [see these explanations](./demonstration_script.md/#2--review-the-pipeline-processing).
 
 #### Compliance Alerting
 
@@ -59,7 +74,9 @@ The Sink: Send the alert to a new Kafka topic: alerts.compliance.non-adherence.
 
 #### Device's health
 
+<figure markdown="span">
 ![](./images/start_simul_metrics.png)
+</figure>
 
 Goal assess device reliability:
 
@@ -68,23 +85,6 @@ Goal assess device reliability:
 
 If we do an insulin pump, we can have Flink detecting a spike in BloodGlucose (Telemetry). Then checks the Prescription for the maximum allowable dose, to finally sends a command back to a Kafka topic `device.commands` to trigger an insulin bolus automatically.
 
-
-## Quick Start
-
-For developers [see specific instructions](./dev_instructions.md) for running locally, with code structure explanation  and implementation approachs.
-
-For end-user get the pre-requisites and run the infrastructure setup and start the application with docker compose.
-
-### Prerequisites
-
-* get docker and docker compose
-* get terraform
-
-### Infrastructure as Code
-
-### Local Execution
-
-### Pipeline Review
 
 
 ## Resources

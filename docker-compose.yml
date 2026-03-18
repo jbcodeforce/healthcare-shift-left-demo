@@ -29,7 +29,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    image: healthcare-shift-left-demo/backend:latest
+    image: jbcodeforce/healthcare-shift-left-demo-backend:latest
     container_name: backend
     ports:
       - "8000:8000"
@@ -60,7 +60,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    image: healthcare-shift-left-demo/frontend:latest
+    image: jbcodeforce/healthcare-shift-left-demo-frontend:latest
     container_name: frontend
     ports:
       - "5173:80"
@@ -72,7 +72,7 @@ services:
     build:
       context: ./connect
       dockerfile: Dockerfile
-    image: healthcare-shift-left-demo/kafka-connect:latest
+    image: jbcodeforce/healthcare-shift-left-demo-kafka-connect:latest
     container_name: kafka-connect
     ports:
       - "8083:8083"

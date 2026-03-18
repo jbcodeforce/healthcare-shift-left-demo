@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS hc_raw_devices (
   patient_id         STRING COMMENT 'Patient identifier',
   pressure_setting   DOUBLE COMMENT 'Pressure setting',
   flow_rate_setting  DOUBLE COMMENT 'Flow rate setting',
-  flow_level         INT COMMENT 'Flow level',
+  motor_speed_setting INT COMMENT 'Motor speed setting',
   PRIMARY KEY (device_id) NOT ENFORCED
 ) DISTRIBUTED BY HASH(device_id) INTO 1 BUCKETS
 WITH (

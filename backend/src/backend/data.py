@@ -54,7 +54,7 @@ def get_devices() -> list[dict]:
             "patientId": p["patientId"],
             "pressureSetting": 10.0 + (i % 3),
             "flowRateSetting": 2.5 + (i % 3) * 0.2,
-            "flowLevel": 2 + (i % 3),
+            "motorSpeedSetting": 60 + (i % 3),
         }
         for i, p in enumerate(patients)
     ]
@@ -70,7 +70,7 @@ def get_prescriptions() -> list[dict]:
     metrics = [
         ("Pressure", "pressureSetting", 1.0),
         ("FlowRate", "flowRateSetting", 0.5),
-        ("MotorSpeed", None, 150.0),
+        ("MotorSpeed", "motorSpeedSetting", 50.0),
     ]
     out = []
     for p in patients:
@@ -80,7 +80,7 @@ def get_prescriptions() -> list[dict]:
             continue
         params = []
         for metric_name, key, tolerance in metrics:
-            target = d[key] if key else 3200.0
+            target = d[key] if key else 100.0
             params.append({
                 "parameter_name": metric_name,
                 "parameter_value": target,

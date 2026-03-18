@@ -10,4 +10,4 @@ The approach is to use healthcare use case, like Patient records, health provide
 
 The audiance of this demonstration is data engineers to understand the art of feaseable. 
 
-[See the publish documentation](https://jeromeboyer.net/healthcare-shift-left-demo)
+[See the publish documentation](https://jbcodeforce.github.io/healthcare-shift-left-demo)
