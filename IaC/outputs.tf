@@ -10,6 +10,9 @@ output "env_display_name" {
   value       = local.env_display_name
 }
 
+# ------------------------------------------------------
+# Kafka Cluster
+# ------------------------------------------------------
 output "kafka_cluster_id" {
   description = "Kafka cluster ID"
   value       = local.kafka_cluster_id
@@ -30,6 +33,29 @@ output "kafka_rest_endpoint" {
   value       = local.kafka_rest_endpoint
 }
 
+
+# ------------------------------------------------------
+# Schema Registry
+# ------------------------------------------------------
+
+output "schema_registry_id" {
+  description = "Schema Registry cluster ID"
+  value       = local.schema_registry.id
+}
+
+output "schema_registry_endpoint" {
+  description = "Schema Registry REST API endpoint (HTTPS URL for clients)"
+  value       = local.schema_registry.rest_endpoint
+}
+
+output "schema_registry_rest_endpoint" {
+  description = "Schema Registry REST endpoint (same as schema_registry_endpoint)"
+  value       = local.schema_registry.rest_endpoint
+}
+
+# ------------------------------------------------------
+# Flink Resources
+# ------------------------------------------------------
 output "flink_compute_pool_id" {
   description = "Flink compute pool ID"
   value       = confluent_flink_compute_pool.pool.id

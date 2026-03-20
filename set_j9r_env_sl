@@ -1,3 +1,8 @@
+# shellcheck shell=bash
+_REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$_REPO_ROOT/set_env_var"
+
 export SL_KAFKA_API_KEY=$KAFKA_API_KEY
 export SL_KAFKA_API_SECRET=$KAFKA_API_SECRET
 export SL_FLINK_API_KEY=$FLINK_API_KEY
@@ -16,3 +21,4 @@ export CCLOUD_CONTEXT=login-jboyer@confluent.io-https://confluent.cloud
 export CLOUD_PROVIDER=aws
 export CLOUD_REGION=us-west-2
 export CCLOUD_COMPUTE_POOL_ID=$FLINK_COMPUTE_POOL_ID
+

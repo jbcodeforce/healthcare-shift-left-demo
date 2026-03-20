@@ -4,12 +4,12 @@ This folder contains Terraform definitions for the healthcare-shift-left-demo Co
 
 ## Resources
 
-| Resource            | When created                          |
+| Resource            | Created ...                          |
 |---------------------|----------------------------------------|
 | Confluent Environment | When `environment_id` is not set     |
 | Kafka Cluster       | When `kafka_cluster_id` is not set    |
 | Flink Compute Pool  | Always (in the target environment)   |
-| Flink SQL Statements | When `deploy_flink_statements` is true (default) |
+| Flink SQL Statements | When `deploy_flink_statements` is true  |
 
 ## File structure
 
@@ -29,6 +29,25 @@ This folder contains Terraform definitions for the healthcare-shift-left-demo Co
 
 1. **Confluent Cloud account** with API access.
 2. **Cloud API key and secret** with permissions to create environments, clusters, and Flink compute pools (e.g. OrganizationAdmin, or EnvironmentAdmin + CloudClusterAdmin for the create path).
+
+
+## Credentials from `backend/.env`
+
+Reuse the same [`backend/.env`](../backend/.env) file which sets environment variables for the backend, to define environment variables for Terraform: `TF_VAR_*`. Run the following commands from the **repository root**:
+
+```sh
+source ./set_env_var && source ./export_terraform_env.sh
+cd IaC && terraform plan
+```
+
+[`export_terraform_env.sh`](../export_terraform_env.sh) maps `.env` variable names to Terraform inputs (see the Terraform block at the top of [`backend/.env.example`](../backend/.env.example)). If `CONFLUENT_CLOUD_API_KEY` is not already set, the script sources [`set_env_var`](../set_env_var) first (which loads `backend/.env` using a path relative to the script, not your current directory).
+
+Alternatively, `source ./set_j9r_env_sl` loads `backend/.env`, sets shift_left-related exports, and runs the same Terraform mapping.
+
+`terraform.tfvars` (and `-var` flags) still override or supplement any variable you define there. Empty values in `.env` are not exported as `TF_VAR_*`, so Terraform keeps its defaults for optional variables.
+
+[`main.tf`](main.tf) sets Kafka, Schema Registry, Flink, and Tableflow provider arguments to empty strings so variables such as `FLINK_API_KEY` or `KAFKA_API_KEY` in your shell (from `source`ing `.env`) do not partially configure the Confluent provider, which would trigger its “all or none” validation.
+
 3. **Flink API key and secret** (optional, required for Flink statement deployment):
    - Create a service account with EnvironmentAdmin permissions
    - Generate API keys for this service account
@@ -47,6 +66,7 @@ This folder contains Terraform definitions for the healthcare-shift-left-demo Co
    ```
 
    Or copy `terraform.tfvars.example` to `terraform.tfvars` and set all credentials there.
+
 
 ## Create (provision all or attach to existing)
 

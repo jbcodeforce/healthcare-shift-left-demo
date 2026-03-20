@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# Load ./backend/.env and export all variables into the current shell.
-BACKEND_ENV="./backend/.env"
+# Load backend/.env and export all variables into the current shell.
+# Path is resolved relative to this script's directory (repo root), not the current working directory.
+_script="${BASH_SOURCE[0]:-$0}"
+_SCRIPT_DIR="$(cd "$(dirname "$_script")" && pwd)"
+BACKEND_ENV="${_SCRIPT_DIR}/backend/.env"
 if [[ -r "$BACKEND_ENV" ]]; then
   set -a
   # shellcheck source=/dev/null

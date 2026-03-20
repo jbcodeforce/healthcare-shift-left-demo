@@ -23,13 +23,13 @@ variable "cloud_provider" {
 variable "cloud_region" {
   description = "Cloud region (e.g. us-east-1, us-west-2)"
   type        = string
-  default     = "us-east-1"
+  default     = "us-west-2"
 }
 
 variable "prefix" {
   description = "Prefix for created resource names"
   type        = string
-  default     = "healthcare-demo"
+  default     = "health"
 }
 
 # Optional: use existing environment and/or Kafka cluster (skip creation when set)
@@ -87,11 +87,11 @@ variable "flink_principal_id" {
 variable "deploy_flink_statements" {
   description = "Whether to deploy Flink SQL statements (DDL/DML)"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "statement_name_prefix" {
   description = "Prefix for Flink statement names"
   type        = string
-  default     = "hc-demo"
+  default     = "hc"
 }

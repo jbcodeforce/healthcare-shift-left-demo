@@ -10,16 +10,36 @@ terraform {
   }
 }
 
+# Resource-specific metadata (Kafka REST, Schema Registry, Flink, Tableflow) must not be set on the
+# provider when values would create a dependency cycle (Flink) or when sourced from backend/.env:
+# the Confluent provider merges CONFLUENT_*, FLINK_*, KAFKA_*, SCHEMA_REGISTRY_*, etc. via
+# EnvDefaultFunc. Any *partial* group triggers "all or none" validation errors.
+# Explicit "" overrides process env; resources (e.g. confluent_flink_statement) pass credentials inline.
 provider "confluent" {
   cloud_api_key    = var.confluent_cloud_api_key
   cloud_api_secret = var.confluent_cloud_api_secret
 
-  # Flink-specific configuration for statement deployment
-  flink_rest_endpoint   = var.flink_api_key != "" ? data.confluent_flink_region.flink_region.rest_endpoint : null
-  flink_compute_pool_id = var.flink_api_key != "" ? confluent_flink_compute_pool.pool.id : null
-  flink_api_key         = var.flink_api_key != "" ? var.flink_api_key : null
-  flink_api_secret      = var.flink_api_secret != "" ? var.flink_api_secret : null
-  flink_principal_id    = var.flink_principal_id != "" ? var.flink_principal_id : null
+  kafka_id              = ""
+  kafka_api_key         = ""
+  kafka_api_secret      = ""
+  kafka_rest_endpoint   = ""
+
+  schema_registry_id              = ""
+  schema_registry_api_key         = ""
+  schema_registry_api_secret      = ""
+  schema_registry_rest_endpoint   = ""
+  catalog_rest_endpoint           = ""
+
+  flink_api_key         = ""
+  flink_api_secret      = ""
+  flink_rest_endpoint   = ""
+  organization_id       = ""
+  environment_id        = ""
+  flink_compute_pool_id = ""
+  flink_principal_id    = ""
+
+  tableflow_api_key    = ""
+  tableflow_api_secret = ""
 }
 
 # Data sources for organization and Flink region
@@ -31,7 +51,6 @@ data "confluent_flink_region" "flink_region" {
   region = var.cloud_region
 }
 
-# Data source for environment display name (needed for Flink statement properties)
 # Only fetched when using existing environment
 data "confluent_environment" "existing" {
   count = local.use_existing_env ? 1 : 0
