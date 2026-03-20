@@ -52,6 +52,7 @@ cp backend/.env.example backend/.env
 
 For **PostgreSQL** (prescriptions CRUD and Debezium), the Compose stack uses `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` (defaults: `demo`, `demo`, `healthcare`). For local backend dev, set `DATABASE_URL=postgresql://demo:demo@localhost:5432/healthcare` (or match your Postgres credentials if you change them).
 
+The IaC folder includes terraforms to create a new Confluent Cloud Environment, or use an existing one.
 
 ## How to run the demo
 

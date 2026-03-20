@@ -234,12 +234,11 @@ echo -e ""
 if [ -n "$LAN_IP" ]; then
   echo -e "  ${YELLOW}On your WiFi (other devices):${NC}"
   echo -e "    App:        http://${LAN_IP}:5173"
-  echo -e "    Backend:    http://${LAN_IP}:8000"
+  echo -e "    Backend API:    http://${LAN_IP}:8000/docs"
 fi
 
 echo -e "  ${YELLOW}Frontend:${NC}       http://localhost:5173"
-echo -e "  ${YELLOW}Backend:${NC}        http://localhost:8000"
-echo -e "  ${YELLOW}API Docs:${NC}       http://localhost:8000/docs"
+echo -e "  ${YELLOW}Backend API Docs:${NC}       http://localhost:8000/docs"
 echo -e "  ${YELLOW}Kafka Connect:${NC}  ${CONNECT_URL} (if started)"
 echo -e ""
 echo -e "  Press ${RED}Ctrl+C${NC} to stop all services"
