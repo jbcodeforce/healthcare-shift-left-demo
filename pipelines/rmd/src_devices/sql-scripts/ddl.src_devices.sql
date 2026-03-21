@@ -1,15 +1,15 @@
 CREATE TABLE IF NOT EXISTS hc_src_devices (
   device_id          STRING NOT NULL COMMENT 'Primary key',
-  patient_id         STRING COMMENT 'Patient identifier',
+  patient_id         STRING NOT NULL COMMENT 'Patient identifier',
   model_type         STRING COMMENT 'Model type',
   manufacturer       STRING COMMENT 'Manufacturer',
   serial_number      STRING COMMENT 'Serial number',
   software_version   STRING COMMENT 'Software version',
   pressure_setting   DOUBLE COMMENT 'Pressure setting',
   flow_rate_setting  DOUBLE COMMENT 'Flow rate setting',
-  flow_level         INT COMMENT 'Flow level',
-  PRIMARY KEY (device_id) NOT ENFORCED
-) DISTRIBUTED BY HASH(device_id) INTO 1 BUCKETS
+  flow_level_setting INT COMMENT 'Flow level',
+  PRIMARY KEY (patient_id, device_id) NOT ENFORCED
+) DISTRIBUTED BY HASH(patient_id, device_id) INTO 2 BUCKETS
 WITH (
   'changelog.mode' = 'upsert',
   'key.avro-registry.schema-context' = '.flink-dev',

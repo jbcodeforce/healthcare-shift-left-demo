@@ -26,9 +26,9 @@ _env_id="${ENVIRONMENT_ID:-}"
 
 [[ -n "${KAFKA_CLUSTER_ID:-}" ]] && export TF_VAR_kafka_cluster_id="$KAFKA_CLUSTER_ID"
 
-[[ -n "${FLINK_API_KEY:-}" ]] && export TF_VAR_flink_api_key="$FLINK_API_KEY"
-[[ -n "${FLINK_API_SECRET:-}" ]] && export TF_VAR_flink_api_secret="$FLINK_API_SECRET"
-[[ -n "${PRINCIPAL_ID:-}" ]] && export TF_VAR_flink_principal_id="$PRINCIPAL_ID"
+# Kafka / Schema Registry / Flink API keys are created by Terraform (app_credentials.tf).
+# After apply, use: cd IaC && terraform output -raw backend_env_snippet
+# Do not map FLINK_* or PRINCIPAL_ID to TF_VAR_* (those variables were removed).
 
 [[ -n "${PREFIX:-}" ]] && export TF_VAR_prefix="$PREFIX"
 [[ -n "${FLINK_COMPUTE_POOL_NAME:-}" ]] && export TF_VAR_flink_compute_pool_name="$FLINK_COMPUTE_POOL_NAME"

@@ -1,0 +1,1 @@
+ alter table `healthcare.public.prescriptions` set ('changelog.mode' = 'append');

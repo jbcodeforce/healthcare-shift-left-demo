@@ -6,6 +6,9 @@ INSERT INTO hc_fct_drift_evts
 SELECT
   m.device_id,
   m.patient_id,
+  d.name,
+  d.gender,
+  d.birth_date,
   m.ts,
   p.prescription_id,
   m.metric_name,
@@ -31,9 +34,11 @@ SELECT
     ', actual ',
     CAST(m.metric_value AS STRING),
     ')'
-  )                                 AS message
-FROM hc_device_metrics m
-JOIN hc_src_prescriptions p
+  ) AS message
+FROM hc_raw_device_metrics m
+LEFT JOIN hc_dim_patients d
+  ON m.patient_id = d.patient_id
+LEFT JOIN hc_src_prescriptions p
   ON m.device_id = p.device_id
  AND m.patient_id = p.patient_id
  AND m.metric_name = p.metric_name

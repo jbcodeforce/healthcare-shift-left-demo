@@ -1,8 +1,10 @@
 # Flink Statements Terraform Implementation Summary
 
+Attention: This is not recommended for Production deployment!
+
 ## What Was Implemented
 
-This implementation adds automated Flink SQL statement deployment to the existing Terraform infrastructure. The system automatically deploys all DDL and DML statements defined in `pipelines/inventory.json`.
+This demonstration adds automated Flink SQL statement deployment to the existing Terraform infrastructure. The system automatically deploys all DDL and DML statements defined in `pipelines/inventory.json`.
 
 ## Files Created/Modified
 
@@ -11,12 +13,13 @@ This implementation adds automated Flink SQL statement deployment to the existin
 - **`IMPLEMENTATION_SUMMARY.md`** - This file
 
 ### Modified Files
-- **`variables.tf`** - Added Flink API credentials and statement deployment options
+- **`variables.tf`** - Statement deployment options (Flink app keys are Terraform-managed; see `app_credentials.tf`)
 - **`main.tf`** - Added Flink provider configuration and environment data source
 - **`env.tf`** - Updated to expose environment display name for both created and existing environments
 - **`outputs.tf`** - Added statement deployment outputs
 - **`README.md`** - Comprehensive documentation updates
-- **`terraform.tfvars.example`** - Added Flink credential examples
+- **`terraform.tfvars.example`** - Notes on Terraform-managed API keys
+- **`app_credentials.tf`** - Demo service account, RBAC, Kafka/SR/Flink API keys (as applicable in current repo)
 
 ## Architecture
 
@@ -48,7 +51,7 @@ The implementation deploys statements in 4 sequential phases to ensure dependenc
 - **Automatic dependency ordering**: Uses Terraform `depends_on` to ensure correct deployment order
 - **Properties file support**: Loads Flink session properties from `.properties` files when available
 - **Flexible deployment**: Can skip statement deployment with `deploy_flink_statements=false`
-- **Reusable credentials**: Uses existing service account and API keys (specified in .tfvars)
+- **Terraform-managed credentials**: Demo service account and Kafka / Schema Registry / Flink API keys (`app_credentials.tf`); use `terraform output backend_env_snippet` for `backend/.env`
 
 ## Required Variables
 
@@ -59,14 +62,12 @@ Add these to your `terraform.tfvars`:
 confluent_cloud_api_key    = "YOUR_CLOUD_API_KEY"
 confluent_cloud_api_secret = "YOUR_CLOUD_API_SECRET"
 
-# Flink API credentials (NEW - required for statement deployment)
-flink_api_key       = "YOUR_FLINK_API_KEY"
-flink_api_secret    = "YOUR_FLINK_API_SECRET"
-flink_principal_id  = "sa-xxxxx"  # Service account ID that owns the Flink API key
-
-# Optional overrides
+# Flink statement deployment (optional; app API keys are created by Terraform)
 # deploy_flink_statements = true
 # statement_name_prefix   = "hc-demo"
+
+# After apply, populate backend/.env from outputs:
+#   terraform output -raw backend_env_snippet
 ```
 
 ## How to Use
@@ -197,7 +198,7 @@ Before applying to production:
 ### Permission errors
 - Verify service account has EnvironmentAdmin role
 - Check API key belongs to the correct service account
-- Confirm `flink_principal_id` matches the service account ID
+- Confirm `terraform output app_service_account_id` matches `PRINCIPAL_ID` in `backend_env` / statements principal
 
 ## Next Steps
 

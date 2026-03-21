@@ -16,6 +16,8 @@ if [ -f "$BACKEND_DIR/.env" ]; then
 fi
 CONNECTOR_NAME="${DEBEZIUM_CONNECTOR_NAME:-debezium-postgres-healthcare}"
 DATA_TOPIC="${DEBEZIUM_TOPIC_PREFIX:-healthcare}.public.prescriptions"
+CC_ENV_NAME="${FLINK_ENV_NAME}"
+CC_KAFKA_NAME="${FLINK_DATABASE_NAME}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -80,7 +82,25 @@ check_requirements() {
 
 }
 
-
+# Verify Confluent Cloud authentication (required for verify_topics / Kafka CLI usage).
+# Tries current CLI shapes: `confluent cloud environment list` then `confluent environment list`.
+check_confluent_cloud_login() {
+    local auth_ok=1
+    if confluent cloud environment list &>/dev/null; then
+        auth_ok=0
+    elif confluent environment list &>/dev/null; then
+        auth_ok=0
+    fi
+    if [ "$auth_ok" -ne 0 ]; then
+        echo -e "${RED}Error: Confluent CLI is not logged in or authentication failed.${NC}"
+        echo "  Log in to Confluent Cloud:"
+        echo "    confluent login"
+        echo "  Non-interactive options include CONFLUENT_CLOUD_EMAIL / CONFLUENT_CLOUD_PASSWORD"
+        echo "  (see: confluent login --help) or saved credentials (confluent login --save)."
+        exit 1
+    fi
+    echo -e "${GREEN}Confluent CLI: authenticated to Confluent Cloud.${NC}"
+}
 
 # Start backend
 start_backend() {
@@ -155,7 +175,7 @@ connector_is_defined() {
 
 verify_topics() {
     echo -e "\n${GREEN}Verifying topics...${NC}"
-    if ! confluent kafka topic list --environment $ENV_ID --cluster $KAFKA_CLUSTER_ID | grep -q "${DATA_TOPIC}"; then
+    if ! confluent kafka topic list --environment ${ENV_ID} --cluster ${KAFKA_CLUSTER_ID}  | grep -q "${DATA_TOPIC}"; then
         echo -e "  ${YELLOW}Topic ${DATA_TOPIC} not found. Creating...${NC}"
         ./connect/create-topics.sh
     else
@@ -214,30 +234,22 @@ ensure_kafka_connect() {
 
 # Main execution
 check_requirements
+check_confluent_cloud_login
 cd "$PROJECT_ROOT"
 start_postgres
 verify_topics
 ensure_kafka_connect
 start_backend
 start_frontend
-LAN_IP=""
-if command -v ipconfig &> /dev/null; then
-  LAN_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null)
-elif command -v hostname &> /dev/null; then
-  LAN_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
-fi
+
 
 echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${GREEN}Development environment is running!${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e ""
-if [ -n "$LAN_IP" ]; then
-  echo -e "  ${YELLOW}On your WiFi (other devices):${NC}"
-  echo -e "    App:        http://${LAN_IP}:5173"
-  echo -e "    Backend API:    http://${LAN_IP}:8000/docs"
-fi
-
 echo -e "  ${YELLOW}Frontend:${NC}       http://localhost:5173"
+echo -e "  ${YELLOW}Confluent Cloud Environment:${NC}       ${CC_ENV_NAME}"
+echo -e "  ${YELLOW}Confluent Cloud Kafka:${NC}       ${CC_KAFKA_NAME}"
 echo -e "  ${YELLOW}Backend API Docs:${NC}       http://localhost:8000/docs"
 echo -e "  ${YELLOW}Kafka Connect:${NC}  ${CONNECT_URL} (if started)"
 echo -e ""

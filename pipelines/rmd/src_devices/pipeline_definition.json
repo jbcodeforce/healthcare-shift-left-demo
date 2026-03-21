@@ -60,9 +60,9 @@
          "table_name": "hc_dim_patients",
          "product_name": "rmd",
          "type": "unknown-type",
-         "dml_ref": "pipelines/rmd/dim_patients/sql-scripts/dml.dim_patients.sql",
-         "ddl_ref": "pipelines/rmd/dim_patients/sql-scripts/ddl.dim_patients.sql",
-         "path": "pipelines/rmd/dim_patients",
+         "dml_ref": "pipelines/rmd/hc_dim_patients/sql-scripts/dml.dim_patients.sql",
+         "ddl_ref": "pipelines/rmd/hc_dim_patients/sql-scripts/ddl.dim_patients.sql",
+         "path": "pipelines/rmd/hc_dim_patients",
          "complexity": {
             "number_of_regular_joins": 2,
             "number_of_left_joins": 0,

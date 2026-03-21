@@ -44,17 +44,24 @@ Copy and edit the backend `.env` environment file:
 
 ```bash
 cp backend/.env.example backend/.env
-# Edit backend/.env with:
-# - KAFKA_BOOTSTRAP_SERVERS, KAFKA_SASL_USERNAME, KAFKA_SASL_PASSWORD (if using Kafka)
-# - SCHEMA_REGISTRY_URL, SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO (if using Schema Registry)
-# - DATABASE_URL or rely on Compose: postgresql://demo:demo@localhost:5432/healthcare
+# Edit backend/.env with the minimum configuration
+CLOUD_PROVIDER="aws"
+CLOUD_REGION="us-west-2"
+ORG_ID="4....4"
+CONFLUENT_CLOUD_API_KEY=.....
+CONFLUENT_CLOUD_API_SECRET=cflt....
 ```
 
 For **PostgreSQL** (prescriptions CRUD and Debezium), the Compose stack uses `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` (defaults: `demo`, `demo`, `healthcare`). For local backend dev, set `DATABASE_URL=postgresql://demo:demo@localhost:5432/healthcare` (or match your Postgres credentials if you change them).
 
-The IaC folder includes terraforms to create a new Confluent Cloud Environment, or use an existing one.
+The IaC folder includes terraforms to create a new Confluent Cloud Environment, kafka cluster.. or use an existing one. [See quickstart](./quick_start.md/#infrastructure-as-code) section.
 
 ## How to run the demo
+
+Set environment variables:
+```sh
+source set_env_var
+```
 
 ### Option A: One-command dev mode (recommended for developers)
 
@@ -428,17 +435,42 @@ main.py
 --- 
 ## Deployment
 
-* Be sure to have set env variables. See[.env.example](.env.example)
+* Be sure to have set env variables. See[.env.example]()
 
-### With shift left tool
+### With shift_left cli
+
+Need to be on at least shift_left version 0.1.49
 
 ```sh
-source set_j9r_env
+source set_sl_env
 shift_left table build-inventory $PIPELINES
+shift_left pipeline delete-all-metadata
 shift_left pipeline build-all-metadata
-shift_left pipeline deploy --table-name device_metrics --compute-pool-id $FLINK_COMPUTE_POOL_ID
-shift_left pipeline deploy --table-name raw_devices --compute-pool-id $FLINK_COMPUTE_POOL_ID
-shift_left pipeline deploy --table-name raw_patients --compute-pool-id $FLINK_COMPUTE_POOL_ID
+shift_left pipeline  build-execution-plan --table-name hc_fct_drift_evts --compute-pool-id $FLINK_COMPUTE_POOL_ID 
 ```
+
+Here is an example of outcomes
+```sh
+--- Ancestors: 7 ---
+Statement Name                                                  Status          Compute Pool    Action  Upgrade Mode    Table Name
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+dev-usw2-rmd-dml-hc-src-prescriptions                           UNKNOWN         lfcp-916r8m     To run  Stateless       hc_src_prescriptions
+dev-usw2-raw-dml-hc-raw-device-metrics                          UNKNOWN         lfcp-916r8m     To run  Stateless       hc_raw_device_metrics
+dev-usw2-raw-dml-hc-raw-patients                                UNKNOWN         lfcp-916r8m     To run  Stateless       hc_raw_patients
+dev-usw2-raw-dml-hc-raw-devices                                 UNKNOWN         lfcp-916r8m     To run  Stateless       hc_raw_devices
+dev-usw2-rmd-dml-hc-src-patients                                UNKNOWN         lfcp-916r8m     To run  Stateful        hc_src_patients
+dev-usw2-rmd-dml-hc-src-devices                                 UNKNOWN         lfcp-916r8m     To run  Stateless       hc_src_devices
+dev-usw2-rmd-dml-hc-dim-patients                                UNKNOWN         lfcp-916r8m     To run  Stateful        hc_dim_patients
+
+--- Children to restart ---
+Statement Name                                                  Status          Compute Pool    Action  Upgrade Mode    Table Name
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+dev-usw2-rmd-dml-hc-fct-drift-evts                              UNKNOWN         lfcp-916r8m     Restart Stateful        hc_fct_drift_evts
+```
+
+* Deploy:
+   ```sh
+   shift_left pipeline deploy --table-name hc_fct_drift_evts --compute-pool-id $FLINK_COMPUTE_POOL_ID 
+   ```
 
 ## 

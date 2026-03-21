@@ -96,14 +96,14 @@ resource "confluent_flink_statement" "ddl_raw" {
   }
 
   principal {
-    id = var.flink_principal_id
+    id = confluent_service_account.demo_app.id
   }
 
   rest_endpoint = data.confluent_flink_region.flink_region.rest_endpoint
 
   credentials {
-    key    = var.flink_api_key
-    secret = var.flink_api_secret
+    key    = confluent_api_key.demo_flink.id
+    secret = confluent_api_key.demo_flink.secret
   }
 
   statement      = file(each.value.ddl_path)
@@ -136,14 +136,14 @@ resource "confluent_flink_statement" "ddl_rmd" {
   }
 
   principal {
-    id = var.flink_principal_id
+    id = confluent_service_account.demo_app.id
   }
 
   rest_endpoint = data.confluent_flink_region.flink_region.rest_endpoint
 
   credentials {
-    key    = var.flink_api_key
-    secret = var.flink_api_secret
+    key    = confluent_api_key.demo_flink.id
+    secret = confluent_api_key.demo_flink.secret
   }
 
   statement      = file(each.value.ddl_path)
@@ -185,14 +185,14 @@ resource "confluent_flink_statement" "dml_raw" {
   }
 
   principal {
-    id = var.flink_principal_id
+    id = confluent_service_account.demo_app.id
   }
 
   rest_endpoint = data.confluent_flink_region.flink_region.rest_endpoint
 
   credentials {
-    key    = var.flink_api_key
-    secret = var.flink_api_secret
+    key    = confluent_api_key.demo_flink.id
+    secret = confluent_api_key.demo_flink.secret
   }
 
   statement      = file(each.value.dml_path)
@@ -235,14 +235,14 @@ resource "confluent_flink_statement" "dml_rmd" {
   }
 
   principal {
-    id = var.flink_principal_id
+    id = confluent_service_account.demo_app.id
   }
 
   rest_endpoint = data.confluent_flink_region.flink_region.rest_endpoint
 
   credentials {
-    key    = var.flink_api_key
-    secret = var.flink_api_secret
+    key    = confluent_api_key.demo_flink.id
+    secret = confluent_api_key.demo_flink.secret
   }
 
   statement      = file(each.value.dml_path)

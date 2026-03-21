@@ -37,6 +37,8 @@ CONFLUENT_CLOUD_API_SECRET=cflt....
 
 If you do not have a Confluent Cloud Environment, a Kafka cluster, schema registry and Flink compute pools, you can use the Terraform in the IaC folder. You can also reuse existing resources. We will explain that in a sub section
 
+* Followin classical steps for terraform:
+
 ```sh
 terraform init
 terraform plan
@@ -62,12 +64,68 @@ schema_registry_endpoint = "https://psrc-......us-west-2.aws.confluent.cloud"
 schema_registry_id = "lsrc-...."
 ```
 
+
+* Adding a command to get environment variables (to see them)
+    ```sh
+     terraform output -json backend_env
+    ```
+
+    The response is a json document will all the envronment variables
+
+    ```json
+    {"FLINK_API_KEY":"....",
+    "FLINK_API_SECRET":"cflt.....",
+    "FLINK_COMPUTE_POOL_ID":"lfcp-....",
+    "FLINK_REST_ENDPOINT":"https://flink......confluent.cloud",
+    "KAFKA_API_KEY":"....",
+    "KAFKA_API_SECRET":"cflt.....",
+    "KAFKA_BOOTSTRAP_SERVERS":"SASL_SSL://pkc-......confluent.cloud:9092",
+    "KAFKA_CLUSTER_ID":"lkc-...",
+    "KAFKA_REST_ENDPOINT":"https://pkc-....confluent.cloud:443",
+    "KAFKA_SASL_PASSWORD":"cfltVO...A",
+    "KAFKA_SASL_USERNAME":"....",
+    "PRINCIPAL_ID":"sa-...","SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO":"....",
+    "SCHEMA_REGISTRY_URL":"https://psrc-....confluent.cloud"}
+    ```
+
+* modify the backend/.env with the created API KEYs and SECRETs
+    ```sh
+    cd ./scripts
+     ./update_backend_env_from_terraform.sh  
+    ```
+
+    The backend/.env should get the new environment variables settings.
+
 ### Reuse existing Confluent Cloud Resources
+
+In case you want to reuse an existing Confluent environment, Kafka cluster, schema registry and keys and secrets...
+
+To Be Completed
 
 ## Create CDC Topic
 
-## Deploy the Flink Statements
+* Login to confluent using cli:
+    ```sh
+    confluent login
+    ```
 
+* Run shell to create precription topic
+    ```
+    cd connect
+    ./create-topics.sh
+    cd ..
+    ```
+ 
+## Define environment variables in current shell
+
+```sh
+source set_env_var
+```
+
+If you plan to use shift_left utils add the following step:
+```sh
+source set_sl_env
+```
 
 ## Local Execution Of the Demo Components
 
@@ -75,3 +133,40 @@ schema_registry_id = "lsrc-...."
 docker compose up -d
 ```
 
+Access to the [demonstration web application](http://localhost:5173/)
+
+![](./images/home_page.png)
+
+## Deploy Flink Pipelines
+
+### Using Shift Left CLI
+
+* Prepare the metadata:
+    ```sh
+    source set_sl_env 
+    # Build the table inventory
+    shift_left table build-inventory
+    # build the pipelines metadata
+    shift_left pipeline delete-all-metadata
+    shift_left pipeline build-all-metadata
+    ```
+* Change some setting for current source topics
+    ```sh
+    shift_left pipeline prepare $PIPELINES/rmd/alter_tables.sql
+    ```
+
+* Assess one of the leaf table execution path:
+    ```sh
+     shift_left pipeline build-execution-plan --table-name hc_fct_drift_evts --compute-pool-id $FLINK_COMPUTE_POOL_ID 
+    ```
+
+<figure markdown="span">
+![](./images/fct_to_raw_pipe.png)
+</figure>
+
+* Deploy a full pipeline
+    ```sh
+    shift_left  pipeline deploy --table-name hc_fct_drift_evts --compute-pool-id $FLINK_COMPUTE_POOL_ID
+    ```
+
+### Using Terraform

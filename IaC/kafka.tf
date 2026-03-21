@@ -26,8 +26,9 @@ data "confluent_kafka_cluster" "existing" {
 }
 
 locals {
-  kafka_cluster_id       = local.use_existing_kafka ? data.confluent_kafka_cluster.existing[0].id : confluent_kafka_cluster.kafka[0].id
-  kafka_bootstrap       = local.use_existing_kafka ? data.confluent_kafka_cluster.existing[0].bootstrap_endpoint : confluent_kafka_cluster.kafka[0].bootstrap_endpoint
-  kafka_rest_endpoint    = local.use_existing_kafka ? data.confluent_kafka_cluster.existing[0].rest_endpoint : confluent_kafka_cluster.kafka[0].rest_endpoint
-  kafka_display_name     = local.use_existing_kafka ? data.confluent_kafka_cluster.existing[0].display_name : confluent_kafka_cluster.kafka[0].display_name
+  kafka_cluster_id    = local.use_existing_kafka ? data.confluent_kafka_cluster.existing[0].id : confluent_kafka_cluster.kafka[0].id
+  kafka_bootstrap     = local.use_existing_kafka ? data.confluent_kafka_cluster.existing[0].bootstrap_endpoint : confluent_kafka_cluster.kafka[0].bootstrap_endpoint
+  kafka_rest_endpoint = local.use_existing_kafka ? data.confluent_kafka_cluster.existing[0].rest_endpoint : confluent_kafka_cluster.kafka[0].rest_endpoint
+  kafka_display_name  = local.use_existing_kafka ? data.confluent_kafka_cluster.existing[0].display_name : confluent_kafka_cluster.kafka[0].display_name
+  kafka_rbac_crn      = local.use_existing_kafka ? data.confluent_kafka_cluster.existing[0].rbac_crn : confluent_kafka_cluster.kafka[0].rbac_crn
 }

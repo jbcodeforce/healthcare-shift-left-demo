@@ -1,5 +1,24 @@
 # Outputs for Confluent Cloud resources
 
+locals {
+  backend_env_snippet = join("\n", [
+    "KAFKA_BOOTSTRAP_SERVERS=\"${local.kafka_bootstrap}\"",
+    "KAFKA_REST_ENDPOINT=\"${local.kafka_rest_endpoint}\"",
+    "KAFKA_CLUSTER_ID=\"${local.kafka_cluster_id}\"",
+    "KAFKA_API_KEY=${confluent_api_key.demo_kafka.id}",
+    "KAFKA_API_SECRET=${confluent_api_key.demo_kafka.secret}",
+    "KAFKA_SASL_USERNAME=${confluent_api_key.demo_kafka.id}",
+    "KAFKA_SASL_PASSWORD=${confluent_api_key.demo_kafka.secret}",
+    "SCHEMA_REGISTRY_URL=\"${local.schema_registry.rest_endpoint}\"",
+    "SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO=${confluent_api_key.demo_schema_registry.id}:${confluent_api_key.demo_schema_registry.secret}",
+    "FLINK_API_KEY=${confluent_api_key.demo_flink.id}",
+    "FLINK_API_SECRET=${confluent_api_key.demo_flink.secret}",
+    "FLINK_REST_ENDPOINT=${data.confluent_flink_region.flink_region.rest_endpoint}",
+    "PRINCIPAL_ID=${confluent_service_account.demo_app.id}",
+    "FLINK_COMPUTE_POOL_ID=${confluent_flink_compute_pool.pool.id}",
+  ])
+}
+
 output "env_id" {
   description = "Confluent Cloud environment ID"
   value       = local.environment_id
@@ -51,6 +70,75 @@ output "schema_registry_endpoint" {
 output "schema_registry_rest_endpoint" {
   description = "Schema Registry REST endpoint (same as schema_registry_endpoint)"
   value       = local.schema_registry.rest_endpoint
+}
+
+# ------------------------------------------------------
+# Demo app credentials (Terraform-managed API keys)
+# ------------------------------------------------------
+
+output "app_service_account_id" {
+  description = "Service account ID for demo app (PRINCIPAL_ID for Flink / backend)"
+  value       = confluent_service_account.demo_app.id
+}
+
+output "app_kafka_api_key_id" {
+  description = "Kafka API key id (KAFKA_API_KEY)"
+  value       = confluent_api_key.demo_kafka.id
+}
+
+output "app_kafka_api_key_secret" {
+  description = "Kafka API key secret (KAFKA_API_SECRET)"
+  value       = confluent_api_key.demo_kafka.secret
+  sensitive   = true
+}
+
+output "app_schema_registry_api_key_id" {
+  description = "Schema Registry API key id (with secret forms SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO)"
+  value       = confluent_api_key.demo_schema_registry.id
+}
+
+output "app_schema_registry_api_key_secret" {
+  description = "Schema Registry API key secret"
+  value       = confluent_api_key.demo_schema_registry.secret
+  sensitive   = true
+}
+
+output "app_flink_api_key_id" {
+  description = "Flink API key id (FLINK_API_KEY)"
+  value       = confluent_api_key.demo_flink.id
+}
+
+output "app_flink_api_key_secret" {
+  description = "Flink API key secret (FLINK_API_SECRET)"
+  value       = confluent_api_key.demo_flink.secret
+  sensitive   = true
+}
+
+output "backend_env" {
+  description = "Map of common backend/.env variable names to values (all sensitive)"
+  sensitive   = true
+  value = {
+    KAFKA_BOOTSTRAP_SERVERS              = local.kafka_bootstrap
+    KAFKA_REST_ENDPOINT                  = local.kafka_rest_endpoint
+    KAFKA_CLUSTER_ID                     = local.kafka_cluster_id
+    KAFKA_API_KEY                        = confluent_api_key.demo_kafka.id
+    KAFKA_API_SECRET                     = confluent_api_key.demo_kafka.secret
+    KAFKA_SASL_USERNAME                  = confluent_api_key.demo_kafka.id
+    KAFKA_SASL_PASSWORD                  = confluent_api_key.demo_kafka.secret
+    SCHEMA_REGISTRY_URL                  = local.schema_registry.rest_endpoint
+    SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO = "${confluent_api_key.demo_schema_registry.id}:${confluent_api_key.demo_schema_registry.secret}"
+    FLINK_API_KEY                        = confluent_api_key.demo_flink.id
+    FLINK_API_SECRET                     = confluent_api_key.demo_flink.secret
+    FLINK_REST_ENDPOINT                  = data.confluent_flink_region.flink_region.rest_endpoint
+    PRINCIPAL_ID                         = confluent_service_account.demo_app.id
+    FLINK_COMPUTE_POOL_ID                = confluent_flink_compute_pool.pool.id
+  }
+}
+
+output "backend_env_snippet" {
+  description = "Multiline text to append or merge into backend/.env (contains secrets; do not commit)"
+  value       = local.backend_env_snippet
+  sensitive   = true
 }
 
 # ------------------------------------------------------

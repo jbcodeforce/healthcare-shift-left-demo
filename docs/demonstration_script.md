@@ -140,7 +140,7 @@ A `select from` query returns the expected record content:
 ### 2.3 Analyze CDC processing
 As an example, we will take the following pipeline:
 <figure markdown="span">
-![](./images/dim_to_raw_pipe.png)
+![](./images/fct_to_raw_pipe.png)
 </figure>
 
 1. Verify current state of the Patients Dimension
@@ -175,10 +175,10 @@ This is counting the number of time a device configuration was changed per patie
 #### Process raw tables
 The Patients and Devices are for demonstration purpose created with Flink and with prepopulated records. In the console workspace you can copy paste the SQLs in the following order:
 
-* DDL hc_raw_devices from [../pipelines/raw/raw_devices/sql-scripts/ddl.raw_devices.sql](../pipelines/raw/raw_devices/sql-scripts/ddl.raw_devices.sql)
-* Insert some records to the hc_raw_devices topic  [../pipelines/raw/raw_devices/sql-scripts/dml.raw_devices.sql](../pipelines/raw/raw_devices/sql-scripts/dml.raw_devices.sql)
-* Create patients [../pipelines/raw/raw_patients/sql-scripts/ddl.raw_patients.sql](../pipelines/raw/raw_devices/sql-scripts/ddl.raw_patients.sq)
-* Insert patient records [../pipelines/raw/raw_patients/sql-scripts/dml.raw_patients.sql](../pipelines/raw/raw_devices/sql-scripts/dml.raw_patients.sq)
+* DDL hc_raw_devices from [https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/raw/raw_devices/sql-scripts/ddl.raw_devices.sql](https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/raw/raw_devices/sql-scripts/ddl.raw_devices.sql)
+* Insert some records to the hc_raw_devices topic  [https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/raw/raw_devices/sql-scripts/dml.raw_devices.sql](https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/raw/raw_devices/sql-scripts/dml.raw_devices.sql)
+* Create patients [https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/raw/raw_patients/sql-scripts/ddl.raw_patients.sql](https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/raw/raw_devices/sql-scripts/ddl.raw_patients.sq)
+* Insert patient records [https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/raw/raw_patients/sql-scripts/dml.raw_patients.sql](https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/raw/raw_devices/sql-scripts/dml.raw_patients.sq)
 
 This should be the current state:
 ![](./images/patients_devices_data.png)

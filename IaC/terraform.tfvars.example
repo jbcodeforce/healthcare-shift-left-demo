@@ -24,11 +24,8 @@
 # flink_compute_pool_name = "healthcare-demo-pool"
 # flink_compute_pool_max_cfu = 5
 
-# Flink API credentials (required for deploying Flink statements)
-# Create a service account with EnvironmentAdmin permissions and generate API keys
-# flink_api_key       = "..."
-# flink_api_secret    = "..."
-# flink_principal_id  = "sa-xxxxx"
+# Kafka / Schema Registry / Flink API keys for the demo app are created by Terraform
+# (see app_credentials.tf). After apply: terraform output -raw backend_env_snippet
 
 # Flink statement deployment
 # deploy_flink_statements = true

@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS hc_dim_patients (
   serial_number STRING COMMENT 'Serial number',
   pressure_setting DOUBLE COMMENT 'Pressure setting',
   flow_rate_setting DOUBLE COMMENT 'Flow rate setting',
-  flow_level INT COMMENT 'Flow level',
+  flow_level_setting INT COMMENT 'Flow level',
   -- put here column definitions
   PRIMARY KEY(patient_id) NOT ENFORCED
 ) DISTRIBUTED BY HASH(patient_id) INTO 1 BUCKETS

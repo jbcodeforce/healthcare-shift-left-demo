@@ -1,7 +1,7 @@
 site_name: HeatchCare Flink Demo
 repo_url: https://github.com/jbcodeforce/healthcare-shift-left-demo
 site_url: https://jbcodeforce.github.io/healthcare-shift-left-demo
-copyright: Copyright &copy; 2026 Jerome Boyer - Confluent
+copyright: Copyright &copy; 2026 Confluent
 nav:
   - Introduction: index.md
   - Quick Start: quick_start.md
@@ -86,5 +86,3 @@ extra:
       link: 'https://github.com/jbcodeforce'
     - icon: fontawesome/brands/linkedin
       link: 'https://linkedin.com/in/jeromeboyer'
-    - icon: fontawesome/solid/paper-plane
-      mailto: jerome@intelligent-automations.com

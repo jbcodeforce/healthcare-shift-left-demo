@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS hc_device_metrics (
+CREATE TABLE IF NOT EXISTS hc_raw_device_metrics (
   device_id       STRING NOT NULL COMMENT 'Device identifier',
   patient_id      STRING NOT NULL COMMENT 'Patient identifier',
   ts              BIGINT NOT NULL COMMENT 'Event time (epoch ms)',

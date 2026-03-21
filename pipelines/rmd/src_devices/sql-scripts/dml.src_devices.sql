@@ -8,6 +8,6 @@ SELECT
     software_version,
     pressure_setting,
     flow_rate_setting,
-    flow_level
+    flow_level_setting
 FROM hc_raw_devices
 WHERE patient_id IS NOT NULL

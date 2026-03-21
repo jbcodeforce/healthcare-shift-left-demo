@@ -16,7 +16,7 @@ SELECT
   device_id,
   if(JSON_VALUE(param_obj, 'lax $.parameter_name')= 'Pressure',   CAST(JSON_VALUE(param_obj, 'lax $.parameter_value' RETURNING DOUBLE) AS DOUBLE), 0) AS pressure_setting,
   if(JSON_VALUE(param_obj, 'lax $.parameter_name')= 'FlowRate',   CAST(JSON_VALUE(param_obj, 'lax $.parameter_value' RETURNING DOUBLE) AS DOUBLE), 0) AS flow_rate_setting,
-  if(JSON_VALUE(param_obj, 'lax $.parameter_name')= 'MotorSpeed',   CAST(JSON_VALUE(param_obj, 'lax $.parameter_value' RETURNING DOUBLE) AS DOUBLE), 0) AS motor_speed
+  if(JSON_VALUE(param_obj, 'lax $.parameter_name')= 'FlowLevel',   CAST(JSON_VALUE(param_obj, 'lax $.parameter_value' RETURNING DOUBLE) AS DOUBLE), 0) AS flow_level_setting
 FROM current_info
 ),
 max_value as (select
@@ -24,12 +24,7 @@ max_value as (select
   device_id,
   MAX(pressure_setting)   AS pressure_setting,
   MAX(flow_rate_setting)  AS flow_rate_setting,
-  MAX(motor_speed)        AS motor_speed,
-  CASE
-    WHEN MAX(motor_speed) > 3000 THEN 3
-    WHEN MAX(motor_speed) > 1000 AND MAX(motor_speed) <= 3000 THEN 2
-    ELSE 1
-  END AS flow_level
+  MAX(flow_level_setting) AS flow_level_setting
 FROM params
 GROUP BY patient_id, device_id)
 select
@@ -42,7 +37,7 @@ select
   d.serial_number,
   max_value.pressure_setting,
   max_value.flow_rate_setting,
-  max_value.flow_level
+  max_value.flow_level_setting
 FROM max_value
 JOIN hc_src_patients p ON max_value.patient_id = p.patient_id
 JOIN hc_src_devices d ON max_value.device_id = d.device_id
