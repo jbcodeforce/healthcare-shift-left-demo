@@ -5,5 +5,18 @@
   ],
   "cursorpyright.analysis.extraPaths": [
     "${workspaceFolder}/producers/device-generator/src"
+  ],
+  "sqltools.connections": [
+    {
+      "ssh": "Disabled",
+      "previewLimit": 50,
+      "server": "localhost",
+      "port": 5432,
+      "driver": "PostgreSQL",
+      "name": "local",
+      "database": "healthcare",
+      "username": "demo",
+      "password": "demo"
+    }
   ]
 }

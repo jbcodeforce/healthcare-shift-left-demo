@@ -95,11 +95,10 @@ check_confluent_cloud_login() {
         echo -e "${RED}Error: Confluent CLI is not logged in or authentication failed.${NC}"
         echo "  Log in to Confluent Cloud:"
         echo "    confluent login"
-        echo "  Non-interactive options include CONFLUENT_CLOUD_EMAIL / CONFLUENT_CLOUD_PASSWORD"
-        echo "  (see: confluent login --help) or saved credentials (confluent login --save)."
-        exit 1
+        echo "It will impact topic creation for CDC connector, if topic already exists, ignore this login constraint"
+    else
+        echo -e "${GREEN}Confluent CLI: authenticated to Confluent Cloud.${NC}"
     fi
-    echo -e "${GREEN}Confluent CLI: authenticated to Confluent Cloud.${NC}"
 }
 
 # Start backend
@@ -177,7 +176,7 @@ verify_topics() {
     echo -e "\n${GREEN}Verifying topics...${NC}"
     if ! confluent kafka topic list --environment ${ENV_ID} --cluster ${KAFKA_CLUSTER_ID}  | grep -q "${DATA_TOPIC}"; then
         echo -e "  ${YELLOW}Topic ${DATA_TOPIC} not found. Creating...${NC}"
-        ./connect/create-topics.sh
+        ${CONNECT_DIR}/create-topics.sh
     else
         echo -e "  ${GREEN}Topic ${DATA_TOPIC} found.${NC}"
     fi
@@ -234,13 +233,13 @@ ensure_kafka_connect() {
 
 # Main execution
 check_requirements
-check_confluent_cloud_login
 cd "$PROJECT_ROOT"
 start_postgres
-verify_topics
-ensure_kafka_connect
 start_backend
 start_frontend
+check_confluent_cloud_login
+verify_topics
+ensure_kafka_connect
 
 
 echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

@@ -19,8 +19,15 @@ class Settings(BaseSettings):
     schema_subject_prefix: str = ".flink-dev"
 
     # Simulation
-    simulation_interval_seconds: float = 2.0
+    # Simulated narrative time between full rounds (all patients); not wall-clock sleep.
+    simulation_interval_seconds: float = 300.0
+    simulation_records_per_second: float = 5.0
     simulation_num_patients: int = 5
+    simulation_flow_level_max: float = 130.0
+    simulation_flow_level_min: float = 0.0
+    simulation_flow_level_jitter: float = 100.0
+    simulation_flow_level_base: float = 150.0
+    simulation_backfill_days: int = 180
 
     # PostgreSQL (prescriptions)
     database_url: str = ""

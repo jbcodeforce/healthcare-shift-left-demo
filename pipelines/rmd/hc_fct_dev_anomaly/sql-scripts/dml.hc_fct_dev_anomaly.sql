@@ -1,0 +1,40 @@
+with pressure_records as (
+  select 
+     device_id,
+     patient_id,
+     ts,
+     metric_value
+   from hc_raw_device_metrics
+   where metric_name = 'Pressure'
+),
+pressure_anomalies as (
+  select
+     device_id,
+     ts,
+     metric_value,
+     ML_DETECT_ANOMALIES(
+        CAST(metric_value as DOUBLE),
+        ts,
+        JSON_OBJECT(
+            'minTrainingSize' VALUE 10,
+            'maxTrainingSize' VALUE 700,
+            'confidencePercentage' VALUE 95.00,
+            'enableStl' VALUE FALSE
+        )
+    ) OVER (
+        PARTITION BY device_id
+        ORDER BY ts
+        RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ) AS anomaly_result
+  from pressure_records
+)
+select 
+  device_id,
+  ts,
+  metric_value as pressure,
+  anomaly_result.forecast_value as expected_pressure,
+  anomaly_result.lower_bound AS lower_bound,
+  anomaly_result.upper_bound AS upper_bound,
+  anomaly_result.is_anomaly AS is_surge
+from pressure_anomalies
+where anomaly_result.is_anomaly = true and metric_value > anomaly_result.upper_bound or metric_value <  anomaly_result.lower_bound

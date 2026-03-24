@@ -11,10 +11,10 @@ SELECT
   device_id,
   medication_or_therapy,
   JSON_VALUE(param_obj, 'lax $.parameter_name')     AS metric_name,
-  CAST(JSON_VALUE(param_obj, 'lax $.parameter_value' RETURNING DOUBLE) AS DOUBLE) AS target_value,
-  CAST(JSON_VALUE(param_obj, 'lax $.parameter_tolerance' RETURNING DOUBLE) AS DOUBLE) AS tolerance_range,
-  start_date,
-  end_date
+  CAST(JSON_VALUE(param_obj, 'lax $.parameter_value' RETURNING STRING) AS DOUBLE) AS target_value,
+  CAST(JSON_VALUE(param_obj, 'lax $.parameter_tolerance' RETURNING STRING) AS DOUBLE) AS tolerance_range,
+  TO_TIMESTAMP_LTZ(start_date) AS start_date,
+  TO_TIMESTAMP_LTZ(end_date) AS end_date
 FROM `healthcare.public.prescriptions`
 CROSS JOIN UNNEST(
   JSON_QUERY(parameters, 'lax $[*]' RETURNING ARRAY<STRING>)

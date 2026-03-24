@@ -18,6 +18,36 @@ const createError = ref(null)
 const createSuccess = ref(null)
 const deletingId = ref(null)
 
+/** Format epoch ms for datetime-local value (local calendar, not UTC). */
+function epochMsToDatetimeLocal(ms) {
+  if (ms == null || Number.isNaN(Number(ms))) return ''
+  const d = new Date(Number(ms))
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+function datetimeLocalToEpochMs(s) {
+  if (s == null || String(s).trim() === '') return null
+  const t = new Date(s).getTime()
+  return Number.isNaN(t) ? null : t
+}
+
+function setFormStartFromLocal(s) {
+  form.value.startDate = datetimeLocalToEpochMs(s)
+}
+
+function setFormEndFromLocal(s) {
+  form.value.endDate = datetimeLocalToEpochMs(s)
+}
+
+/** Human-readable prescription boundary for list header. */
+function formatPrescriptionDate(ms) {
+  if (ms == null || ms === '') return null
+  const n = Number(ms)
+  if (Number.isNaN(n)) return null
+  return new Date(n).toLocaleString()
+}
+
 const form = ref({
   patientId: '',
   deviceId: '',
@@ -27,6 +57,7 @@ const form = ref({
   parameters: [
     { parameter_name: 'Pressure', parameter_value: 10, parameter_type: 'float', parameter_tolerance: 1 },
     { parameter_name: 'FlowRate', parameter_value: 2.5, parameter_type: 'float', parameter_tolerance: 0.5 },
+    { parameter_name: 'FlowLevel', parameter_value: 150, parameter_type: 'float', parameter_tolerance: 50 },
   ],
 })
 
@@ -65,7 +96,8 @@ function groupedPrescriptions() {
       // Header summary from this prescription's parameters (not the device record)
       pressureSetting: paramValue(parametersArray, 'Pressure') ?? device?.pressureSetting,
       flowRateSetting: paramValue(parametersArray, 'FlowRate') ?? device?.flowRateSetting,
-      flowLevel: paramValue(parametersArray, 'Level') ?? paramValue(parametersArray, 'FlowLevel') ?? device?.flowLevel,
+      flowLevelSetting: paramValue(parametersArray, 'FlowLevel') ?? paramValue(parametersArray, 'FlowLevel') ?? device?.flowLevelSetting,
+      flowLevel: paramValue(parametersArray, 'FlowLevel') ?? device?.flowLevel,
     }
   })
 }
@@ -92,6 +124,12 @@ async function submitCreate() {
   createSuccess.value = null
   if (!form.value.patientId || !form.value.deviceId) {
     createError.value = 'Patient and Device are required.'
+    return
+  }
+  const start = form.value.startDate
+  const end = form.value.endDate
+  if (start != null && end != null && end < start) {
+    createError.value = 'End date must be on or after start date.'
     return
   }
   try {
@@ -178,6 +216,22 @@ onMounted(loadPrescriptions)
           <input v-model="form.medicationOrTherapy" type="text" placeholder="e.g. CPAP Oxygen Flow" />
         </div>
         <div class="form-row">
+          <label>Start date</label>
+          <input
+            type="datetime-local"
+            :value="epochMsToDatetimeLocal(form.startDate)"
+            @input="setFormStartFromLocal($event.target.value)"
+          />
+        </div>
+        <div class="form-row">
+          <label>End date</label>
+          <input
+            type="datetime-local"
+            :value="epochMsToDatetimeLocal(form.endDate)"
+            @input="setFormEndFromLocal($event.target.value)"
+          />
+        </div>
+        <div class="form-row">
           <label>Parameters</label>
           <div class="params-list">
             <div class="param-row param-header">
@@ -231,6 +285,9 @@ onMounted(loadPrescriptions)
               <span class="device-meta"> — Patient {{ group.patientId }}</span>
               <span v-if="group.pressureSetting != null || group.flowRateSetting != null || group.flowLevel != null" class="device-meta">
                 · Pressure {{ group.pressureSetting }} · Flow {{ group.flowRateSetting }} · Level {{ group.flowLevel }}
+              </span>
+              <span v-if="formatPrescriptionDate(group.startDate) || formatPrescriptionDate(group.endDate)" class="device-meta">
+                · Start {{ formatPrescriptionDate(group.startDate) ?? '—' }} · End {{ formatPrescriptionDate(group.endDate) ?? '—' }}
               </span>
               <button
                 v-if="!error"
@@ -330,7 +387,8 @@ onMounted(loadPrescriptions)
 }
 .form-row select,
 .form-row input[type="text"],
-.form-row input[type="number"] {
+.form-row input[type="number"],
+.form-row input[type="datetime-local"] {
   width: 100%;
   max-width: 24rem;
   padding: 0.4rem 0.5rem;

@@ -9,11 +9,11 @@ export const mockPatients = [
 ]
 
 export const mockDevices = [
-  { device_id: 'DEV-P001', patientId: 'P001', pressureSetting: 10.0, flowRateSetting: 2.5, flowLevel: 3 },
-  { device_id: 'DEV-P002', patientId: 'P002', pressureSetting: 12.0, flowRateSetting: 2.8, flowLevel: 4 },
-  { device_id: 'DEV-P003', patientId: 'P003', pressureSetting: 8.0, flowRateSetting: 2.0, flowLevel: 2 },
-  { device_id: 'DEV-P004', patientId: 'P004', pressureSetting: 11.0, flowRateSetting: 2.6, flowLevel: 3 },
-  { device_id: 'DEV-P005', patientId: 'P005', pressureSetting: 9.5, flowRateSetting: 2.3, flowLevel: 3 },
+  { device_id: 'DEV-P001', patientId: 'P001', pressureSetting: 10.0, flowRateSetting: 2.5, flowLevel: 120 },
+  { device_id: 'DEV-P002', patientId: 'P002', pressureSetting: 12.0, flowRateSetting: 2.8, flowLevel: 160 },
+  { device_id: 'DEV-P003', patientId: 'P003', pressureSetting: 8.0, flowRateSetting: 2.0, flowLevel: 200 },
+  { device_id: 'DEV-P004', patientId: 'P004', pressureSetting: 11.0, flowRateSetting: 2.6, flowLevel: 240 },
+  { device_id: 'DEV-P005', patientId: 'P005', pressureSetting: 9.5, flowRateSetting: 2.3, flowLevel: 120 },
 ]
 
 /** One prescription per device; parameters = JSON string of array of { parameter_name, parameter_value, parameter_type, parameter_tolerance }. */
@@ -25,7 +25,7 @@ export const mockPrescriptions = [
     medicationOrTherapy: 'CPAP Oxygen Flow',
     startDate: 1710000000000,
     endDate: 1741536000000,
-    parameters: '[{"parameter_name":"Pressure","parameter_value":10,"parameter_type":"float","parameter_tolerance":1},{"parameter_name":"FlowRate","parameter_value":2.5,"parameter_type":"float","parameter_tolerance":0.5},{"parameter_name":"MotorSpeed","parameter_value":3200,"parameter_type":"float","parameter_tolerance":150}]',
+    parameters: '[{"parameter_name":"Pressure","parameter_value":10,"parameter_type":"float","parameter_tolerance":1},{"parameter_name":"FlowRate","parameter_value":2.5,"parameter_type":"float","parameter_tolerance":0.5},{"parameter_name":"FlowLevel","parameter_value":150,"parameter_type":"float","parameter_tolerance":50}]',
   },
   {
     prescriptionId: 'RX-DEV-P002',
@@ -34,7 +34,7 @@ export const mockPrescriptions = [
     medicationOrTherapy: 'CPAP Oxygen Flow',
     startDate: 1710000000000,
     endDate: 1741536000000,
-    parameters: '[{"parameter_name":"Pressure","parameter_value":12,"parameter_type":"float","parameter_tolerance":1},{"parameter_name":"FlowRate","parameter_value":2.8,"parameter_type":"float","parameter_tolerance":0.5},{"parameter_name":"MotorSpeed","parameter_value":3200,"parameter_type":"float","parameter_tolerance":150}]',
+    parameters: '[{"parameter_name":"Pressure","parameter_value":12,"parameter_type":"float","parameter_tolerance":1},{"parameter_name":"FlowRate","parameter_value":2.8,"parameter_type":"float","parameter_tolerance":0.5},{"parameter_name":"FlowLevel","parameter_value":150,"parameter_type":"float","parameter_tolerance":50}]',
   },
   {
     prescriptionId: 'RX-DEV-P003',
@@ -43,6 +43,6 @@ export const mockPrescriptions = [
     medicationOrTherapy: 'CPAP Oxygen Flow',
     startDate: 1710000000000,
     endDate: 1741536000000,
-    parameters: '[{"parameter_name":"Pressure","parameter_value":8,"parameter_type":"float","parameter_tolerance":1},{"parameter_name":"FlowRate","parameter_value":2,"parameter_type":"float","parameter_tolerance":0.5},{"parameter_name":"MotorSpeed","parameter_value":3200,"parameter_type":"float","parameter_tolerance":150}]',
+    parameters: '[{"parameter_name":"Pressure","parameter_value":8,"parameter_type":"float","parameter_tolerance":1},{"parameter_name":"FlowRate","parameter_value":2,"parameter_type":"float","parameter_tolerance":0.5},{"parameter_name":"FlowLevel","parameter_value":150,"parameter_type":"float","parameter_tolerance":50}]',
   },
 ]

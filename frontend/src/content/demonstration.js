@@ -17,9 +17,7 @@ The **Healthcare Demo** UI lets you:
 
 ---
 
-## 1. Start the Backend
-
-Before using the UI, start the demo backend (REST API + telemetry producer).
+## 1. Start the Local Solution
 
 From the **repo root**:
 
@@ -27,36 +25,16 @@ From the **repo root**:
 # Copy and edit backend/.env with Kafka and Schema Registry credentials (see backend/.env.example)
 cp backend/.env.example backend/.env
 
-# Start the backend (port 8000)
-docker compose up -d backend
+docker compose up -d
 \`\`\`
 
-Or run it locally:
 
-\`\`\`bash
-cd backend
-uv run uvicorn backend.main:app --host 0.0.0.0 --port 8000
-\`\`\`
-
-The backend serves:
-
-- **REST API**: \`GET /patients\`, \`GET /devices\`, \`GET /prescriptions\`
-- **Simulation**: \`GET /simulation/status\`, \`POST /simulation/start\`, \`POST /simulation/stop\`
-- **Live stream**: \`GET /telemetry/stream\` (Server-Sent Events)
+Open the app in your browser (e.g. **http://localhost:5173**). The frontend proxies API requests to the backend when running in dev mode.
 
 ---
 
-## 2. Start the Frontend
+## 2. Deploy the Real-time processing in Flink
 
-In a new terminal, from the **repo root**:
-
-\`\`\`bash
-cd frontend
-npm install
-npm run dev
-\`\`\`
-
-Open the app in your browser (e.g. **http://localhost:5173**). The frontend proxies API requests to the backend when running in dev mode.
 
 ---
 
@@ -71,7 +49,6 @@ Use the **left sidebar** to move between pages:
 | **Devices** | Lists devices (ID, patient, pressure/flow settings). |
 | **Prescriptions** | Lists prescriptions **grouped by device** (device row + metric targets). |
 | **Device telemetry** | Start/stop the simulation and connect to the **live telemetry stream**. |
-| **Demonstration** | This page — how to use the demo. |
 
 ---
 
@@ -84,16 +61,6 @@ Use the **left sidebar** to move between pages:
 3. (Optional) Click **Connect stream** to subscribe to live telemetry. Events appear in the table (device, patient, metric, value). Use **Pause** / **Resume** or **Clear** as needed.
 
 The simulation uses the same patient and device IDs as in the **Patients** and **Devices** lists, so you can correlate live metrics with the catalog.
-
----
-
-## 5. Demonstration Flow (Suggested)
-
-1. **Start backend** (step 1) and **frontend** (step 2).
-2. Open **Patients** and **Devices** to see the demo catalog.
-3. Open **Prescriptions** to see targets per device (Pressure, FlowRate, MotorSpeed).
-4. Open **Device telemetry** → **Start simulation** → **Connect stream** to see live metrics.
-5. Compare telemetry values with the prescription targets to understand the “prescription vs reality” use case.
 
 ---
 

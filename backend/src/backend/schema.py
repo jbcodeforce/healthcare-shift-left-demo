@@ -38,6 +38,28 @@ class DeviceMetricsValue(object):
         self.software_version = software_version
 
 
+# Legacy simulator used RPM-scale values under "MotorSpeed". All Kafka telemetry now uses FlowLevel on [0, 300].
+_MOTOR_SPEED_RPM_REF = 3500.0
+_FLOW_LEVEL_MAX = 300.0
+
+
+def normalize_device_metric(record: DeviceMetricsValue) -> DeviceMetricsValue:
+    """Map legacy MotorSpeed to FlowLevel (0–300) for Kafka and UI. Idempotent for other names."""
+    name = (record.metric_name or "").strip()
+    if name.casefold() != "motorspeed":
+        return record
+    rpm = float(record.metric_value)
+    flow_level = min(_FLOW_LEVEL_MAX, max(0.0, rpm * (_FLOW_LEVEL_MAX / _MOTOR_SPEED_RPM_REF)))
+    return DeviceMetricsValue(
+        record.device_id,
+        record.patient_id,
+        record.ts,
+        "FlowLevel",
+        flow_level,
+        record.software_version,
+    )
+
+
 class DeviceMetricsKey(object):
     def __init__(self, device_id: str):
         self.device_id = device_id

@@ -41,12 +41,12 @@ def main() -> None:
             ('DEV-P001', 1710000000000, 'Pressure', 'high'),
             ('DEV-P001', 1710003600000, 'FlowRate', 'low'),
             ('DEV-P001', 1710007200000, 'Pressure', 'high'),
-            ('DEV-P002', 1710001000000, 'MotorSpeed', 'high'),
+            ('DEV-P002', 1710001000000, 'FlowLevel', 'high'),
             ('DEV-P002', 1710004600000, 'Pressure', 'low'),
             ('DEV-P003', 1710002000000, 'FlowRate', 'high'),
             ('DEV-P003', 1710005000000, 'FlowRate', 'high'),
             ('DEV-P004', 1710003000000, 'Pressure', 'high'),
-            ('DEV-P005', 1710004000000, 'MotorSpeed', 'low')
+            ('DEV-P005', 1710004000000, 'FlowLevel', 'low')
         ) AS t(device_id, ts, metric_name, severity)
     """)
     con.execute(f"COPY anomalies TO '{OUTPUT_DIR / "anomalies.parquet"}' (FORMAT parquet)")

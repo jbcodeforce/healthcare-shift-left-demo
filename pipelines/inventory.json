@@ -7,6 +7,14 @@
         "ddl_ref": "pipelines/rmd/hc_dim_patients/sql-scripts/ddl.dim_patients.sql",
         "table_folder_name": "pipelines/rmd/hc_dim_patients"
     },
+    "hc_fct_dev_anomaly": {
+        "table_name": "hc_fct_dev_anomaly",
+        "product_name": "rmd",
+        "type": "unknown-type",
+        "dml_ref": "pipelines/rmd/hc_fct_dev_anomaly/sql-scripts/dml.hc_fct_dev_anomaly.sql",
+        "ddl_ref": "pipelines/rmd/hc_fct_dev_anomaly/sql-scripts/ddl.hc_fct_dev_anomaly.sql",
+        "table_folder_name": "pipelines/rmd/hc_fct_dev_anomaly"
+    },
     "hc_fct_drift_evts": {
         "table_name": "hc_fct_drift_evts",
         "product_name": "rmd",
@@ -15,12 +23,12 @@
         "ddl_ref": "pipelines/rmd/hc_fct_drift_evts/sql-scripts/ddl.hc_fct_drift_evts.sql",
         "table_folder_name": "pipelines/rmd/hc_fct_drift_evts"
     },
-    "hc_fct_telemetry_5m": {
-        "table_name": "hc_fct_telemetry_5m",
+    "hc_fct_telemetry_1h": {
+        "table_name": "hc_fct_telemetry_1h",
         "product_name": "rmd",
         "type": "unknown-type",
-        "dml_ref": "pipelines/rmd/hc_fct_telemetries/sql-scripts/dml.hc_fct_telemetry_5m.sql",
-        "ddl_ref": "pipelines/rmd/hc_fct_telemetries/sql-scripts/ddl.hc_fct_compliance_1h.sql",
+        "dml_ref": "pipelines/rmd/hc_fct_telemetries/sql-scripts/dml.hc_fct_telemetry_1h.sql",
+        "ddl_ref": "pipelines/rmd/hc_fct_telemetries/sql-scripts/ddl.hc_fct_telemetry_1h.sql",
         "table_folder_name": "pipelines/rmd/hc_fct_telemetries"
     },
     "hc_raw_device_metrics": {

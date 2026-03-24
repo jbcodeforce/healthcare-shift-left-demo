@@ -225,7 +225,7 @@ healthcare-shift-left-demo/
 | Path | Purpose |
 |------|--------|
 | `src/backend/main.py` | FastAPI app: health, patients, devices, prescriptions CRUD, simulation control, telemetry SSE and metrics API. |
-| `src/backend/simulation.py` | Device telemetry simulation loop (Pressure, FlowRate, MotorSpeed). Produces to Kafka, pushes to SSE queue, and maintains a cache for `GET /telemetry/metrics`. |
+| `src/backend/simulation.py` | Device telemetry simulation loop (Pressure, FlowRate, FlowLevel). Produces to Kafka, pushes to SSE queue, and maintains a cache for `GET /telemetry/metrics`. |
 | `src/backend/producer.py` | Confluent Kafka Avro producer; sends device metrics to `device_metrics` topic. |
 | `src/backend/schema.py` | Avro schema and `DeviceMetricsValue` model for telemetry. |
 | `src/backend/data.py` | In-memory demo data for patients and devices; used when DB is not configured or for seeding. |
@@ -402,7 +402,7 @@ public class Encounter {
    Stored in **PostgreSQL**. The UI and API perform CRUD. **Debezium** (Kafka Connect) streams changes to Confluent Cloud Kafka (e.g. `healthcare.public.prescriptions`). Downstream Flink jobs can consume this as the “desired state.”
 
 2. **Device telemetry (reality)**  
-   The **backend simulation** generates records (Pressure, FlowRate, MotorSpeed) per device at a configurable interval. Each record is:
+   The **backend simulation** generates records (Pressure, FlowRate, FlowLevel) per device at a configurable interval. Each record is:
    - Sent to **Kafka** (topic `device_metrics`, Avro, Schema Registry).
    - Pushed to an in-memory **queue** for **SSE** (`GET /telemetry/stream`).
    - Appended to a **bounded cache** used by **GET /telemetry/metrics** for the telemetry charts.

@@ -14,6 +14,7 @@ from backend.schema import (
     DeviceMetricsValue,
     device_metrics_key_to_dict,
     device_metrics_value_to_avro,
+    normalize_device_metric,
 )
 
 logger = logging.getLogger(__name__)
@@ -114,6 +115,7 @@ def produce_device_metric(record: DeviceMetricsValue) -> None:
     """Serialize and produce one device-metric record to Kafka. Call init_producer() first."""
     if _producer is None or _avro_value_serializer is None or _avro_key_serializer is None:
         raise RuntimeError("Producer not initialized; call init_producer() first")
+    record = normalize_device_metric(record)
     key_obj = DeviceMetricsKey(record.device_id)
     _producer.produce(_topic, key=key_obj, value=record, on_delivery=delivery_report)
     _producer.poll(0)

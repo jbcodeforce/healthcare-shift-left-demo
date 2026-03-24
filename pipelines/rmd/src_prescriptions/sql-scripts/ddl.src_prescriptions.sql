@@ -6,8 +6,8 @@ CREATE TABLE IF NOT EXISTS hc_src_prescriptions (
   metric_name           STRING COMMENT 'Metric to control',
   target_value          DOUBLE COMMENT 'e.g. 2.5 (Liters per minute)',
   tolerance_range       DOUBLE COMMENT 'Acceptable +/- e.g. 0.5',
-  start_date            BIGINT COMMENT 'Start (epoch ms)',
-  end_date              BIGINT COMMENT 'End (epoch ms)'
+  start_date            TIMESTAMP(0)  COMMENT 'Start (epoch ms)',
+  end_date              TIMESTAMP(0) COMMENT 'End (epoch ms)'
 ) DISTRIBUTED BY HASH(prescription_id) INTO 1 BUCKETS
 WITH (
   'changelog.mode' = 'append',

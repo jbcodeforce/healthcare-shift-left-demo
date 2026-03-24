@@ -12,6 +12,6 @@
     "plugin.name": "pgoutput",
     "publication.name": "debezium_healthcare",
     "slot.name": "__SLOT_NAME__",
-    "snapshot.mode": "initial"
+    "snapshot.mode": "always"
   }
 }

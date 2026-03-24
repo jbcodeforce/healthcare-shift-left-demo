@@ -169,4 +169,12 @@ Access to the [demonstration web application](http://localhost:5173/)
     shift_left  pipeline deploy --table-name hc_fct_drift_evts --compute-pool-id $FLINK_COMPUTE_POOL_ID
     ```
 
+* Undeploy: the best approach is to deploy per data products:
+    ```sh
+    shift_left  pipeline undeploy --product-name rmd --compute-pool-id $FLINK_COMPUTE_POOL_ID
+    #
+    shift_left/cli.py  pipeline undeploy --product-name raw --compute-pool-id $FLINK_COMPUTE_POOL_ID
+    ```
+
+
 ### Using Terraform

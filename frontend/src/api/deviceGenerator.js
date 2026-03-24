@@ -137,12 +137,12 @@ export async function stopSimulation() {
 }
 
 /** Simulator scenario types. */
-const SIMULATOR_TYPES = ['stop_motor', 'pressure_oscillate', 'flow_rate_down']
+const SIMULATOR_TYPES = ['flow_level_down', 'pressure_oscillate', 'flow_rate_down']
 
 /**
  * Trigger a one-shot scenario for a device.
  * @param { string } deviceId - device_id (e.g. DEV-P001)
- * @param { 'stop_motor' | 'pressure_oscillate' | 'flow_rate_down' } type
+ * @param { 'flow_level_down' | 'pressure_oscillate' | 'flow_rate_down' } type
  * @returns { Promise<{ status: string, message: string }> }
  */
 export async function triggerDeviceSimulation(deviceId, type) {

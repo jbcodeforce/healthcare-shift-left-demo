@@ -15,7 +15,7 @@ The worker env vars are **not** in this folder because they are applied when the
 
 - **`debezium-postgres.json`** — Connector config template. Placeholders are replaced by `register-connector.sh` from env (defaults in the script).
 - **`register-connector.sh`** — Waits for Connect, then creates or updates the connector using the JSON (with env substitution). Run from repo root: `./connect/register-connector.sh`. Optionally set `CONNECT_URL` if Connect is not on port 8083. To remove the connector first, see **Remove and recreate the connector** below.
-- **`create-topics.sh`** — Creates the Debezium data topic (e.g. `healthcare.public.prescriptions`) via Confluent Cloud CLI to avoid `UNKNOWN_TOPIC_OR_PARTITION`. Run from repo root; requires `ccloud`.
+- **`create-topics.sh`** — Creates the Debezium data topic (e.g. `healthcare.public.prescriptions`) via Confluent Cloud CLI to avoid `UNKNOWN_TOPIC_OR_PARTITION`. Run from repo root.
 - **`connect-distributed.properties.example`** — Reference worker config (key/converter, security). The running worker is configured via Compose env, not this file.
 - **`Dockerfile`** — Builds the Connect image (Confluent + Debezium PostgreSQL plugin + custom subject strategy JAR + entrypoint).
 - **`subject-strategy/`** — Maven project for **PrefixTopicNameStrategy**: subject names `:{prefix}:{topic}-key` / `-value` to align with the backend producer. The JAR is built in the Docker image and copied to `/etc/kafka-connect/jars/`, which the Connect launch script adds to the worker’s main CLASSPATH so the Avro converter can load the strategy class.
@@ -47,9 +47,15 @@ To override, set in `backend/.env` or export before running `./connect/register-
 
    ```bash
    curl -X DELETE "${CONNECT_URL:-http://localhost:8083}/connectors/${DEBEZIUM_CONNECTOR_NAME:-debezium-postgres-healthcare}"
+   #
+   curl -X DELETE http://localhost:8083/connectors/debezium-postgres-healthcare
    ```
 
-   Wait a few seconds, then confirm it is gone: `curl -s "${CONNECT_URL:-http://localhost:8083}/connectors"`.
+   Wait a few seconds, then confirm it is gone: 
+   ```sh
+   curl -s "${CONNECT_URL:-http://localhost:8083}/connectors"
+   ```
+   
 
 2. **Optional — Postgres replication slot** — After delete, the replication slot may still exist (default name `debezium_healthcare_slot`, or `DEBEZIUM_SLOT_NAME`). If recreate fails or you want a clean logical replication state, drop the slot while nothing is using it (adjust slot name if you customized it):
 
@@ -57,13 +63,15 @@ To override, set in `backend/.env` or export before running `./connect/register-
    docker exec -it postgres psql -U demo -d healthcare -c "SELECT pg_drop_replication_slot('debezium_healthcare_slot');"
    ```
 
-3. **Optional — full offset/history reset** — For a CDC stream from scratch you may also need to clear Debezium’s **database history** Kafka topic and related Connect offsets; only needed in advanced reset scenarios.
+3. **Optional — full offset/history reset** — For a CDC stream from scratch you may also need to clear Debezium’s history Kafka topic and related Connect offsets; only needed in advanced reset scenarios.
 
 4. **Recreate** — From repo root: `./connect/register-connector.sh`. With `snapshot.mode: initial` in `debezium-postgres.json`, re-snapshot behavior after recreate depends on remaining offsets/history; dropping the slot (and history topic if applicable) moves you closer to a true fresh snapshot.
 
+With  `snapshot.mode: always` the database table is reloaded to kafka at each connector restart. 
+
 ### Publication and table (required for connector to run)
 
-The connector uses the **existing publication** `debezium_healthcare` and does not create it (PostgreSQL allows only superusers to create publications). The Postgres init script `postgres/init.d/02-debezium-replication.sh` creates this publication for `public.prescriptions`. The table is created in `postgres/init.d/01-prescriptions-schema.sql`. If you already had a Postgres volume before these scripts existed, create the publication manually:
+The connector uses the existing publication `debezium_healthcare` and does not create it (PostgreSQL allows only superusers to create publications). The Postgres init script `postgres/init.d/02-debezium-replication.sh` creates this publication for `public.prescriptions`. The table is created in `postgres/init.d/01-prescriptions-schema.sql`. If you already had a Postgres volume before these scripts existed, create the publication manually:
 
 ```bash
 docker exec -it postgres psql -U demo -d healthcare -c "CREATE PUBLICATION IF NOT EXISTS debezium_healthcare FOR TABLE public.prescriptions;"
@@ -89,10 +97,10 @@ If you see `UNKNOWN_TOPIC_OR_PARTITION` in the Connect logs, create the topic be
 
 ```bash
 # Data topic (partition count is your choice; 1 is fine for low volume)
-ccloud kafka topic create healthcare.public.prescriptions --partitions 1
+confluent kafka topic create healthcare.public.prescriptions --partitions 1
 ```
 
-You can also create the topic in the Confluent Cloud UI. Or run `./connect/create-topics.sh` (requires `ccloud`). After the topic exists, the connector should proceed without that warning.
+You can also create the topic in the Confluent Cloud UI. Or run `./connect/create-topics.sh`. After the topic exists, the connector should proceed without that warning.
 
 ### Connector not streaming / no schemas in Schema Registry
 

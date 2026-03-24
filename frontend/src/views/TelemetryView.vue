@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { Chart } from 'chart.js/auto'
+import 'chartjs-adapter-date-fns'
 import { getSimulationStatus, startSimulation, stopSimulation, subscribeTelemetryStream, getTelemetryMetrics, getDevices, triggerDeviceSimulation } from '../api/deviceGenerator.js'
 
 const status = ref(null)
@@ -20,10 +21,10 @@ let unsubscribeStream = null
 let pollTimer = null
 let chartPressure = null
 let chartFlowRate = null
-let chartMotorSpeed = null
+let chartFlowLevel = null
 const canvasPressure = ref(null)
 const canvasFlowRate = ref(null)
-const canvasMotorSpeed = ref(null)
+const canvasFlowLevel = ref(null)
 
 const DEVICE_COLORS = [
   'rgb(59, 130, 246)',
@@ -38,17 +39,46 @@ const DEVICE_COLORS = [
   'rgb(20, 184, 166)',
 ]
 
-function formatTs(ts) {
-  if (ts == null) return '—'
-  const d = new Date(typeof ts === 'number' ? ts : parseInt(ts, 10))
-  return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+/** Epoch ms for charts/API; supports numeric ms or ISO strings (parseInt on ISO breaks Chart.js). */
+function toEpochMs(ts) {
+  if (ts == null || ts === '') return null
+  if (typeof ts === 'number' && Number.isFinite(ts)) return ts
+  if (typeof ts === 'string') {
+    const trimmed = ts.trim()
+    if (/^\d+$/.test(trimmed)) return parseInt(trimmed, 10)
+    const parsed = Date.parse(ts)
+    if (!Number.isNaN(parsed)) return parsed
+  }
+  return null
 }
 
+function formatTs(ts) {
+  const ms = toEpochMs(ts)
+  if (ms == null) return '—'
+  return new Date(ms).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+}
 
 function formatTsShort(ts) {
-  if (ts == null) return ''
-  const d = new Date(typeof ts === 'number' ? ts : parseInt(ts, 10))
-  return d.toLocaleTimeString(undefined, { minute: '2-digit', second: '2-digit' })
+  const ms = toEpochMs(ts)
+  if (ms == null) return ''
+  return new Date(ms).toLocaleTimeString(undefined, { minute: '2-digit', second: '2-digit' })
+}
+
+/** Shared x-axis range so the three charts stay aligned; padding avoids edge clipping. */
+function xBoundsFromRecords(records) {
+  let minT = Infinity
+  let maxT = -Infinity
+  for (const r of records) {
+    const x = toEpochMs(r.ts)
+    if (x == null) continue
+    minT = Math.min(minT, x)
+    maxT = Math.max(maxT, x)
+  }
+  if (!Number.isFinite(minT)) return null
+  const span = Math.max(maxT - minT, 90_000)
+  const padL = Math.max(span * 0.06, 120_000)
+  const padR = Math.max(span * 0.08, 180_000)
+  return { min: minT - padL, max: maxT + padR }
 }
 
 /** Build Chart.js datasets for one metric: one dataset per device. */
@@ -58,7 +88,9 @@ function buildDatasetsForMetric(records, metricName) {
     if (r.metric_name !== metricName) continue
     const dev = r.device_id
     if (!byDevice[dev]) byDevice[dev] = []
-    byDevice[dev].push({ x: r.ts, y: Number(r.metric_value) })
+    const x = toEpochMs(r.ts)
+    if (x == null) continue
+    byDevice[dev].push({ x, y: Number(r.metric_value) })
   }
   const devices = Object.keys(byDevice).sort()
   return devices.map((dev, i) => {
@@ -69,19 +101,31 @@ function buildDatasetsForMetric(records, metricName) {
       borderColor: DEVICE_COLORS[i % DEVICE_COLORS.length],
       backgroundColor: DEVICE_COLORS[i % DEVICE_COLORS.length],
       fill: false,
-      tension: 0.2,
-      pointRadius: 2,
+      tension: 0,
+      pointRadius: 3,
       pointHoverRadius: 5,
     }
   })
 }
 
-function updateChart(chartInstance, records, metricName, yLabel) {
+function updateChart(chartInstance, records, metricName, yLabel, xBounds, yAxis = null) {
   if (!chartInstance) return
   const datasets = buildDatasetsForMetric(records, metricName)
   chartInstance.data.datasets = datasets
   chartInstance.options.scales.y.title.text = yLabel
-  chartInstance.update('none')
+  if (yAxis && yAxis.min != null && yAxis.max != null) {
+    chartInstance.options.scales.y.min = yAxis.min
+    chartInstance.options.scales.y.max = yAxis.max
+  }
+  const xScale = chartInstance.options.scales.x
+  if (xBounds) {
+    xScale.min = xBounds.min
+    xScale.max = xBounds.max
+  } else {
+    delete xScale.min
+    delete xScale.max
+  }
+  chartInstance.update()
 }
 
 async function fetchMetrics() {
@@ -105,10 +149,17 @@ function stopPolling() {
   }
 }
 
-function createChart(canvasEl, metricName, title, yLabel) {
+function createChart(canvasEl, metricName, title, yLabel, yAxis = null) {
   if (!canvasEl) return null
   const ctx = canvasEl.getContext('2d')
   if (!ctx) return null
+  const yScale = {
+    title: { display: true, text: yLabel },
+    beginAtZero: yAxis?.min === 0,
+  }
+  if (yAxis?.min != null) yScale.min = yAxis.min
+  if (yAxis?.max != null) yScale.max = yAxis.max
+  if (!yAxis) yScale.beginAtZero = false
   return new Chart(ctx, {
     type: 'line',
     data: {
@@ -117,29 +168,48 @@ function createChart(canvasEl, metricName, title, yLabel) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      interaction: { intersect: false, mode: 'index' },
+      animation: {
+        duration: 500,
+        easing: 'easeOutQuart',
+      },
+      transitions: {
+        active: { animation: { duration: 350 } },
+      },
+      interaction: { intersect: false, mode: 'nearest', axis: 'x' },
       plugins: {
         legend: { position: 'top' },
         title: { display: true, text: title },
         tooltip: {
           callbacks: {
-            title: (items) => items.length && items[0].raw?.x != null ? formatTs(items[0].raw.x) : '',
+            title: (items) => {
+              if (!items.length) return ''
+              const x = items[0].parsed?.x
+              return x != null ? formatTs(x) : ''
+            },
           },
         },
       },
       scales: {
         x: {
-          type: 'linear',
-          title: { display: true, text: 'Time' },
+          type: 'time',
+          title: { display: true, text: 'Simulated event time' },
+          time: {
+            tooltipFormat: 'MMM d, yyyy HH:mm:ss',
+            displayFormats: {
+              millisecond: 'HH:mm:ss.SSS',
+              second: 'HH:mm:ss',
+              minute: 'MMM d HH:mm',
+              hour: 'MMM d HH:mm',
+              day: 'MMM d',
+            },
+          },
           ticks: {
-            callback: (value) => formatTsShort(value),
-            maxTicksLimit: 10,
+            maxRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: 12,
           },
         },
-        y: {
-          title: { display: true, text: yLabel },
-          beginAtZero: false,
-        },
+        y: yScale,
       },
     },
   })
@@ -148,18 +218,24 @@ function createChart(canvasEl, metricName, title, yLabel) {
 function initCharts() {
   if (chartPressure) chartPressure.destroy()
   if (chartFlowRate) chartFlowRate.destroy()
-  if (chartMotorSpeed) chartMotorSpeed.destroy()
+  if (chartFlowLevel) chartFlowLevel.destroy()
   chartPressure = createChart(canvasPressure.value, 'Pressure', 'Pressure (simulated → Kafka)', 'Pressure')
   chartFlowRate = createChart(canvasFlowRate.value, 'FlowRate', 'Flow rate (simulated → Kafka)', 'Flow rate')
-  chartMotorSpeed = createChart(canvasMotorSpeed.value, 'MotorSpeed', 'Motor speed (simulated → Kafka)', 'Motor speed (RPM)')
+  chartFlowLevel = createChart(
+    canvasFlowLevel.value,
+    'FlowLevel',
+    'Flow level (simulated → Kafka)',
+    'Flow level (0–300)',
+    { min: 0, max: 300 },
+  )
 }
 
 watch(metricsRecords, (records) => {
-  if (records.length) {
-    updateChart(chartPressure, records, 'Pressure', 'Pressure')
-    updateChart(chartFlowRate, records, 'FlowRate', 'Flow rate')
-    updateChart(chartMotorSpeed, records, 'MotorSpeed', 'Motor speed (RPM)')
-  }
+  if (!records.length) return
+  const bounds = xBoundsFromRecords(records)
+  updateChart(chartPressure, records, 'Pressure', 'Pressure', bounds)
+  updateChart(chartFlowRate, records, 'FlowRate', 'Flow rate', bounds)
+  updateChart(chartFlowLevel, records, 'FlowLevel', 'Flow level (0–300)', bounds, { min: 0, max: 300 })
 }, { deep: true })
 
 async function fetchStatus() {
@@ -253,7 +329,7 @@ onUnmounted(() => {
   if (unsubscribeStream) unsubscribeStream()
   if (chartPressure) chartPressure.destroy()
   if (chartFlowRate) chartFlowRate.destroy()
-  if (chartMotorSpeed) chartMotorSpeed.destroy()
+  if (chartFlowLevel) chartFlowLevel.destroy()
 })
 </script>
 
@@ -288,9 +364,9 @@ onUnmounted(() => {
           <button
             type="button"
             :disabled="!selectedDeviceId || simulatorLoading"
-            @click="runScenario('stop_motor')"
+            @click="runScenario('flow_level_down')"
           >
-            Stop motor
+            Flow level down
           </button>
           <button
             type="button"
@@ -324,7 +400,7 @@ onUnmounted(() => {
           <p v-if="!metricsRecords.length" class="chart-placeholder">No data yet. Start the simulation to see metrics.</p>
         </div>
         <div class="chart-wrap">
-          <canvas ref="canvasMotorSpeed" aria-label="Motor speed chart"></canvas>
+          <canvas ref="canvasFlowLevel" aria-label="Flow level chart"></canvas>
           <p v-if="!metricsRecords.length" class="chart-placeholder">No data yet. Start the simulation to see metrics.</p>
         </div>
       </div>

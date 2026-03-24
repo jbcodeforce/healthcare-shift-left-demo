@@ -41,7 +41,7 @@ from backend.simulation import (
 from backend.simulator import (
     run_flow_rate_down,
     run_pressure_oscillate,
-    run_stop_motor,
+    run_flow_level_down,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -291,15 +291,15 @@ def simulation_start(body: SimulationStartRequest | None = None) -> dict[str, st
 
 @app.post("/simulation/stop")
 def simulation_stop() -> dict[str, str]:
-    """Stop the device simulation."""
+    """Stop the device simulation. Idempotent: always 200 so clients can sync UI."""
     if stop_simulation():
         return {"status": "stopped", "message": "Device simulation stopped."}
-    raise HTTPException(status_code=409, detail="Simulation was not running.")
+    return {"status": "stopped", "message": "Simulation was already stopped."}
 
 
 # ---------- Device simulator (scenario per device) ----------
 
-SimulatorType = Literal["stop_motor", "pressure_oscillate", "flow_rate_down"]
+SimulatorType = Literal["flow_level_down", "pressure_oscillate", "flow_rate_down"]
 
 
 @app.post("/device/{device_id}/simulator/{sim_type}")
@@ -310,9 +310,9 @@ def device_simulator(device_id: str, sim_type: SimulatorType) -> dict[str, str]:
     if device_id not in known_ids:
         raise HTTPException(status_code=404, detail="Device not found")
     try:
-        if sim_type == "stop_motor":
-            run_stop_motor(device_id)
-            msg = f"Stop motor scenario sent for device {device_id}."
+        if sim_type == "flow_level_down":
+            run_flow_level_down(device_id)
+            msg = f"flow_level_down scenario sent for device {device_id}."
         elif sim_type == "pressure_oscillate":
             run_pressure_oscillate(device_id)
             msg = f"Pressure up/down scenario sent for device {device_id}."

@@ -63,21 +63,30 @@ As part of moving from batch to real-time processing the following dimensions an
 | dim_patients | one row per patient (with device and current prescription-derived settings: pressure, flow rate, flow level | [dml.dim_patients.sql](https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/rmd/dim_patients/sql-scripts/dml.dim_patients.sql) | 
 | fact_drift_events | Assess devise metric vs prescription, one row per drift alert  | [dml.hc_fct_drift_evts.sql](https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/rmd/hc_fct_drift_evts/sql-scripts/dml.hc_fct_drift_evts.sql) |
 | Telemetry Facts | fact_telemetry_1h: windowed aggregates per device/patient/metric. fact_compliance_1h: in-range vs total readings (and optionally compliance_pct) per window. | [dml.hc_fct_telemetry_1h.sql](https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/rmd/hc_fct_telemetries/sql-scripts/dml.hc_fct_telemetry_1h.sql) |
+| Anomaly Detection | Fact table to compute anomaly on Pressure, FlowRate or FlowLevel | [hc_fct_dev_anomaly.sql](https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/rmd/hc_fct_dev_anomaly/sql-scripts/dml.hc_fct_dev_anomaly.sql) |
 
 To support the demonstration of how those facts are created, [see these explanations](./demonstration_script.md).
 
-#### Compliance Alerting
+#
+### Compliance Alerting
 
 Use a join between the Prescription stream with the DeviceTelemetry stream to check for **Prescription Drift**.
 The prescriptions change rarely. If DeviceTelemetry.metricValue is outside the Prescription.targetValue +/- toleranceRange for more than $X$ minutes, trigger an alert.
 The Sink: Send the alert to a new Kafka topic: alerts.compliance.non-adherence.
 
-#### Device's health
+### Device's health
+
+With the Device telemetry page we can simulate Pressure, flowRate or flowlevel defect. Starting the simulation sends messages to the `hc_raw_device_metrics` topic, for all the 5 devices in the demonstration.
 
 <figure markdown="span">
 ![](./images/start_simul_metrics.png)
 </figure>
 
+Once the simulation is running, the user can select one of the device and apply one of the 3 simulation.
+
+An [anomaly detection](https://docs.confluent.io/cloud/current/ai/builtin-functions/detect-anomalies.html#ml-detect-anomalies) query can assess the three metrics and report potential issue.
+
+### Other extensions
 Goal assess device reliability:
 
 * Windowed Aggregation: Calculate the average Pressure level or rate flow over a 1-hour tumbling window.

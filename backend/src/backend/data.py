@@ -54,7 +54,8 @@ def get_devices() -> list[dict]:
             "patientId": p["patientId"],
             "pressureSetting": 10.0 + (i % 3),
             "flowRateSetting": 2.5 + (i % 3) * 0.2,
-            "motorSpeedSetting": 60 + (i % 3),
+            "flowLevelSetting": 120.0 + (i % 4) * 40.0,  # demo targets in 0–300 (telemetry FlowLevel)
+            "flowLevel": 120.0 + (i % 4) * 40.0,  # alias for UI (same scale as telemetry FlowLevel)
         }
         for i, p in enumerate(patients)
     ]
@@ -70,7 +71,7 @@ def get_prescriptions() -> list[dict]:
     metrics = [
         ("Pressure", "pressureSetting", 1.0),
         ("FlowRate", "flowRateSetting", 0.5),
-        ("MotorSpeed", "motorSpeedSetting", 50.0),
+        ("FlowLevel", "flowLevelSetting", 50.0),
     ]
     out = []
     for p in patients:
