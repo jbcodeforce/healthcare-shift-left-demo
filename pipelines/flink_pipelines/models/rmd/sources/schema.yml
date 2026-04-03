@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: hc_src_patients
+    description: Source table - deduplicated and transformed patients from raw CDC
+    meta:
+      layer: rmd
+      deployment_phase: 2
+      ddl_path: ../../rmd/src_patients/sql-scripts/ddl.src_patients.sql
+      dml_path: ../../rmd/src_patients/sql-scripts/dml.src_patients.sql
+    config:
+      tags: ['source', 'rmd']
+
+  - name: hc_src_devices
+    description: Source table - deduplicated and transformed devices
+    meta:
+      layer: rmd
+      deployment_phase: 2
+      ddl_path: ../../rmd/src_devices/sql-scripts/ddl.src_devices.sql
+      dml_path: ../../rmd/src_devices/sql-scripts/dml.src_devices.sql
+    config:
+      tags: ['source', 'rmd']
+
+  - name: hc_src_prescriptions
+    description: Source table - prescriptions with extracted JSON parameters
+    meta:
+      layer: rmd
+      deployment_phase: 2
+      ddl_path: ../../rmd/src_prescriptions/sql-scripts/ddl.src_prescriptions.sql
+      dml_path: ../../rmd/src_prescriptions/sql-scripts/dml.src_prescriptions.sql
+    config:
+      tags: ['source', 'rmd']

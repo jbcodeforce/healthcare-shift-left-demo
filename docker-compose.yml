@@ -36,15 +36,9 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
-      - KAFKA_SASL_USERNAME=${KAFKA_SASL_USERNAME}
-      - KAFKA_SASL_PASSWORD=${KAFKA_SASL_PASSWORD}
-      - KAFKA_TOPIC=${KAFKA_TOPIC:-device_metrics}
-      - SCHEMA_REGISTRY_URL=${SCHEMA_REGISTRY_URL}
-      - SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO=${SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO}
-      - SIMULATION_INTERVAL_SECONDS=${SIMULATION_INTERVAL_SECONDS:-2.0}
-      - SIMULATION_NUM_PATIENTS=${SIMULATION_NUM_PATIENTS:-5}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-demo}:${POSTGRES_PASSWORD:-demo}@postgres:5432/${POSTGRES_DB:-healthcare}
+    volumes:
+      - ./analytics:/analytics:ro
     depends_on:
       postgres:
         condition: service_healthy

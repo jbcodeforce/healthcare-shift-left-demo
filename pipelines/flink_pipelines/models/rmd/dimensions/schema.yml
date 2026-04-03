@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: hc_dim_patients
+    description: Patient dimension with current device and prescription settings
+    meta:
+      layer: rmd
+      deployment_phase: 3
+      ddl_path: ../../rmd/hc_dim_patients/sql-scripts/ddl.dim_patients.sql
+      dml_path: ../../rmd/hc_dim_patients/sql-scripts/dml.dim_patients.sql
+    config:
+      tags: ['dimension', 'rmd']
+    columns:
+      - name: patient_id
+        description: Patient identifier
+      - name: device_id
+        description: Device identifier
+      - name: prescription_pressure
+        description: Prescribed pressure setting
+      - name: prescription_flow_rate
+        description: Prescribed flow rate setting

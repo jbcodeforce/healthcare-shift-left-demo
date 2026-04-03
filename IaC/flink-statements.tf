@@ -92,18 +92,18 @@ resource "confluent_flink_statement" "ddl_raw" {
   }
 
   compute_pool {
-    id = confluent_flink_compute_pool.pool.id
+    id = local.flink_compute_pool_id
   }
 
   principal {
-    id = confluent_service_account.demo_app.id
+    id = local.service_account_id
   }
 
   rest_endpoint = data.confluent_flink_region.flink_region.rest_endpoint
 
   credentials {
-    key    = confluent_api_key.demo_flink.id
-    secret = confluent_api_key.demo_flink.secret
+    key    = local.flink_api_key_id
+    secret = local.flink_api_key_secret
   }
 
   statement      = file(each.value.ddl_path)
@@ -132,18 +132,18 @@ resource "confluent_flink_statement" "ddl_rmd" {
   }
 
   compute_pool {
-    id = confluent_flink_compute_pool.pool.id
+    id = local.flink_compute_pool_id
   }
 
   principal {
-    id = confluent_service_account.demo_app.id
+    id = local.service_account_id
   }
 
   rest_endpoint = data.confluent_flink_region.flink_region.rest_endpoint
 
   credentials {
-    key    = confluent_api_key.demo_flink.id
-    secret = confluent_api_key.demo_flink.secret
+    key    = local.flink_api_key_id
+    secret = local.flink_api_key_secret
   }
 
   statement      = file(each.value.ddl_path)
@@ -181,18 +181,18 @@ resource "confluent_flink_statement" "dml_raw" {
   }
 
   compute_pool {
-    id = confluent_flink_compute_pool.pool.id
+    id = local.flink_compute_pool_id
   }
 
   principal {
-    id = confluent_service_account.demo_app.id
+    id = local.service_account_id
   }
 
   rest_endpoint = data.confluent_flink_region.flink_region.rest_endpoint
 
   credentials {
-    key    = confluent_api_key.demo_flink.id
-    secret = confluent_api_key.demo_flink.secret
+    key    = local.flink_api_key_id
+    secret = local.flink_api_key_secret
   }
 
   statement      = file(each.value.dml_path)
@@ -231,18 +231,18 @@ resource "confluent_flink_statement" "dml_rmd" {
   }
 
   compute_pool {
-    id = confluent_flink_compute_pool.pool.id
+    id = local.flink_compute_pool_id
   }
 
   principal {
-    id = confluent_service_account.demo_app.id
+    id = local.service_account_id
   }
 
   rest_endpoint = data.confluent_flink_region.flink_region.rest_endpoint
 
   credentials {
-    key    = confluent_api_key.demo_flink.id
-    secret = confluent_api_key.demo_flink.secret
+    key    = local.flink_api_key_id
+    secret = local.flink_api_key_secret
   }
 
   statement      = file(each.value.dml_path)

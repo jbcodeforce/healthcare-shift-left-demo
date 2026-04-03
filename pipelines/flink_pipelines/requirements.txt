@@ -1,0 +1,9 @@
+# dbt Flink Pipelines - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# dbt Core and Adapter
+dbt-core>=1.7.0,<2.0.0
+dbt-postgres>=1.7.0,<2.0.0
+
+# Flink Deployment Script Dependencies
+requests>=2.31.0

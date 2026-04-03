@@ -8,7 +8,8 @@ This folder contains Terraform definitions for the healthcare-shift-left-demo Co
 |---------------------|----------------------------------------|
 | Confluent Environment | When `environment_id` is not set     |
 | Kafka Cluster       | When `kafka_cluster_id` is not set    |
-| Flink Compute Pool  | Always (in the target environment)   |
+| Service Account     | When `service_account_id` is not set  |
+| Flink Compute Pool  | When `flink_compute_pool_id` is not set |
 | Demo app API keys   | Always (Kafka, Schema Registry, Flink; see `app_credentials.tf`) |
 | Flink SQL Statements | When `deploy_flink_statements` is true  |
 
@@ -89,14 +90,25 @@ terraform plan
 terraform apply
 ```
 
-- **Default (no variables set):** Creates a new environment, Kafka cluster (standard, single zone), Flink compute pool, and demo app API keys.
-- **Use existing environment:** Set `environment_id = "env-xxxxx"` in `terraform.tfvars` or via `-var`. Terraform will create the Kafka cluster (if not existing), Flink pool, and keys in that environment.
-- **Use existing environment and Kafka:** Set both `environment_id` and `kafka_cluster_id`. Terraform will create the Flink compute pool and demo app keys. **When using `kafka_cluster_id`, `environment_id` must also be set** (the cluster belongs to that environment).
+- **Default (no variables set):** Creates a new environment, Kafka cluster (standard, single zone), service account, Flink compute pool, and demo app API keys.
+- **Use existing environment:** Set `environment_id = "env-xxxxx"` in `terraform.tfvars` or via `-var`. Terraform will create the Kafka cluster (if not existing), service account, Flink pool, and keys in that environment.
+- **Use existing environment and Kafka:** Set both `environment_id` and `kafka_cluster_id`. Terraform will create the service account, Flink compute pool, and demo app keys. **When using `kafka_cluster_id`, `environment_id` must also be set** (the cluster belongs to that environment).
+- **Use existing service account:** Set `service_account_id = "sa-xxxxx"`. Terraform will use the existing service account and create API keys for it. The service account must already have the necessary RBAC permissions, or Terraform will attempt to add them.
+- **Use existing Flink compute pool:** Set `flink_compute_pool_id = "lfcp-xxxxx"` and `environment_id`. Terraform will use the existing Flink compute pool instead of creating a new one.
+- **Attach to fully existing infrastructure:** Set `environment_id`, `kafka_cluster_id`, `service_account_id`, and `flink_compute_pool_id` to use all existing resources. Terraform will only create API keys and optionally deploy Flink statements.
 
 Example with existing resources:
 
 ```sh
+# Use existing environment and Kafka cluster only
 terraform apply -var='environment_id=env-xxxxx' -var='kafka_cluster_id=lkc-xxxxx'
+
+# Use all existing resources (SRE scenario)
+terraform apply \
+  -var='environment_id=env-xxxxx' \
+  -var='kafka_cluster_id=lkc-xxxxx' \
+  -var='service_account_id=sa-xxxxx' \
+  -var='flink_compute_pool_id=lfcp-xxxxx'
 ```
 
 ## Clean (destroy managed resources)
@@ -105,8 +117,13 @@ terraform apply -var='environment_id=env-xxxxx' -var='kafka_cluster_id=lkc-xxxxx
 terraform destroy
 ```
 
-- If you **created** the environment and Kafka cluster with this Terraform, they will be destroyed along with the Flink compute pool, API keys, service account, and statements.
-- If you **used existing** environment and/or Kafka cluster (via variables), only resources this stack created (Flink pool, keys, SA, statements, etc.) are destroyed; the existing environment and cluster are not removed.
+- If you **created** resources with this Terraform, they will be destroyed (environment, Kafka cluster, service account, Flink compute pool, API keys, and statements).
+- If you **used existing** resources (via variables), only resources this stack created are destroyed; existing resources are not removed.
+  - Existing environment → not destroyed
+  - Existing Kafka cluster → not destroyed
+  - Existing service account → not destroyed (but role bindings created by Terraform will be removed)
+  - Existing Flink compute pool → not destroyed
+  - API keys → always destroyed (they were created by Terraform)
 
 ## Flink Statement Deployment
 
@@ -168,6 +185,8 @@ Useful outputs:
 | `confluent_cloud_api_secret` | Yes      | Confluent Cloud API secret |
 | `environment_id`             | No       | Existing environment ID; when set, no environment is created |
 | `kafka_cluster_id`           | No       | Existing Kafka cluster ID; when set, no cluster is created (requires `environment_id`) |
+| `service_account_id`         | No       | Existing service account ID; when set, no service account is created (API keys still created) |
+| `flink_compute_pool_id`      | No       | Existing Flink compute pool ID; when set, no pool is created (requires `environment_id`) |
 | `cloud_provider`             | No       | e.g. `AWS` (default) |
 | `cloud_region`               | No       | e.g. `us-west-2` (default) |
 | `prefix`                     | No       | Prefix for resource names (default `health`) |

@@ -1,3 +1,4 @@
+# Documentation
 mkdocs-material
 mkdocs-minify-plugin
 mkdocs
@@ -5,3 +6,8 @@ pymdown-extensions
 mkdocstrings
 mkdocs-mermaid2-plugin
 mkdocs-table-reader-plugin
+
+# dbt and Flink deployment
+dbt-core>=1.7.0
+dbt-postgres>=1.7.0
+requests>=2.31.0

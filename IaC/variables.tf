@@ -73,3 +73,63 @@ variable "statement_name_prefix" {
   type        = string
   default     = "hc"
 }
+
+# Optional: use existing service account (skip creation when set)
+
+variable "service_account_id" {
+  description = "Existing service account ID (e.g. sa-xxxx). When set, no new service account is created. API keys will still be created for this service account."
+  type        = string
+  default     = null
+}
+
+# Optional: use existing Flink compute pool (skip creation when set)
+
+variable "flink_compute_pool_id" {
+  description = "Existing Flink compute pool ID (e.g. lfcp-xxxx). When set, no new Flink compute pool is created. environment_id must also be set."
+  type        = string
+  default     = null
+}
+
+# Optional: use existing API keys (skip creation when set)
+
+variable "kafka_api_key_id" {
+  description = "Existing Kafka API key ID. When set, no new Kafka API key is created."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "kafka_api_key_secret" {
+  description = "Existing Kafka API key secret. Required when kafka_api_key_id is set."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "schema_registry_api_key_id" {
+  description = "Existing Schema Registry API key ID. When set, no new Schema Registry API key is created."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "schema_registry_api_key_secret" {
+  description = "Existing Schema Registry API key secret. Required when schema_registry_api_key_id is set."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "flink_api_key_id" {
+  description = "Existing Flink API key ID. When set, no new Flink API key is created."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "flink_api_key_secret" {
+  description = "Existing Flink API key secret. Required when flink_api_key_id is set."
+  type        = string
+  default     = null
+  sensitive   = true
+}

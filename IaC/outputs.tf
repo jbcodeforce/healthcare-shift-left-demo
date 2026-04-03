@@ -5,17 +5,17 @@ locals {
     "KAFKA_BOOTSTRAP_SERVERS=\"${local.kafka_bootstrap}\"",
     "KAFKA_REST_ENDPOINT=\"${local.kafka_rest_endpoint}\"",
     "KAFKA_CLUSTER_ID=\"${local.kafka_cluster_id}\"",
-    "KAFKA_API_KEY=${confluent_api_key.demo_kafka.id}",
-    "KAFKA_API_SECRET=${confluent_api_key.demo_kafka.secret}",
-    "KAFKA_SASL_USERNAME=${confluent_api_key.demo_kafka.id}",
-    "KAFKA_SASL_PASSWORD=${confluent_api_key.demo_kafka.secret}",
+    "KAFKA_API_KEY=${local.kafka_api_key_id}",
+    "KAFKA_API_SECRET=${local.kafka_api_key_secret}",
+    "KAFKA_SASL_USERNAME=${local.kafka_api_key_id}",
+    "KAFKA_SASL_PASSWORD=${local.kafka_api_key_secret}",
     "SCHEMA_REGISTRY_URL=\"${local.schema_registry.rest_endpoint}\"",
-    "SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO=${confluent_api_key.demo_schema_registry.id}:${confluent_api_key.demo_schema_registry.secret}",
-    "FLINK_API_KEY=${confluent_api_key.demo_flink.id}",
-    "FLINK_API_SECRET=${confluent_api_key.demo_flink.secret}",
+    "SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO=${local.schema_registry_api_key_id}:${local.schema_registry_api_key_secret}",
+    "FLINK_API_KEY=${local.flink_api_key_id}",
+    "FLINK_API_SECRET=${local.flink_api_key_secret}",
     "FLINK_REST_ENDPOINT=${data.confluent_flink_region.flink_region.rest_endpoint}",
-    "PRINCIPAL_ID=${confluent_service_account.demo_app.id}",
-    "FLINK_COMPUTE_POOL_ID=${confluent_flink_compute_pool.pool.id}",
+    "PRINCIPAL_ID=${local.service_account_id}",
+    "FLINK_COMPUTE_POOL_ID=${local.flink_compute_pool_id}",
   ])
 }
 
@@ -78,39 +78,42 @@ output "schema_registry_rest_endpoint" {
 
 output "app_service_account_id" {
   description = "Service account ID for demo app (PRINCIPAL_ID for Flink / backend)"
-  value       = confluent_service_account.demo_app.id
+  value       = local.service_account_id
 }
 
 output "app_kafka_api_key_id" {
   description = "Kafka API key id (KAFKA_API_KEY)"
-  value       = confluent_api_key.demo_kafka.id
+  value       = local.kafka_api_key_id
+  sensitive   = true
 }
 
 output "app_kafka_api_key_secret" {
   description = "Kafka API key secret (KAFKA_API_SECRET)"
-  value       = confluent_api_key.demo_kafka.secret
+  value       = local.kafka_api_key_secret
   sensitive   = true
 }
 
 output "app_schema_registry_api_key_id" {
   description = "Schema Registry API key id (with secret forms SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO)"
-  value       = confluent_api_key.demo_schema_registry.id
+  value       = local.schema_registry_api_key_id
+  sensitive   = true
 }
 
 output "app_schema_registry_api_key_secret" {
   description = "Schema Registry API key secret"
-  value       = confluent_api_key.demo_schema_registry.secret
+  value       = local.schema_registry_api_key_secret
   sensitive   = true
 }
 
 output "app_flink_api_key_id" {
   description = "Flink API key id (FLINK_API_KEY)"
-  value       = confluent_api_key.demo_flink.id
+  value       = local.flink_api_key_id
+  sensitive   = true
 }
 
 output "app_flink_api_key_secret" {
   description = "Flink API key secret (FLINK_API_SECRET)"
-  value       = confluent_api_key.demo_flink.secret
+  value       = local.flink_api_key_secret
   sensitive   = true
 }
 
@@ -121,17 +124,17 @@ output "backend_env" {
     KAFKA_BOOTSTRAP_SERVERS              = local.kafka_bootstrap
     KAFKA_REST_ENDPOINT                  = local.kafka_rest_endpoint
     KAFKA_CLUSTER_ID                     = local.kafka_cluster_id
-    KAFKA_API_KEY                        = confluent_api_key.demo_kafka.id
-    KAFKA_API_SECRET                     = confluent_api_key.demo_kafka.secret
-    KAFKA_SASL_USERNAME                  = confluent_api_key.demo_kafka.id
-    KAFKA_SASL_PASSWORD                  = confluent_api_key.demo_kafka.secret
+    KAFKA_API_KEY                        = local.kafka_api_key_id
+    KAFKA_API_SECRET                     = local.kafka_api_key_secret
+    KAFKA_SASL_USERNAME                  = local.kafka_api_key_id
+    KAFKA_SASL_PASSWORD                  = local.kafka_api_key_secret
     SCHEMA_REGISTRY_URL                  = local.schema_registry.rest_endpoint
-    SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO = "${confluent_api_key.demo_schema_registry.id}:${confluent_api_key.demo_schema_registry.secret}"
-    FLINK_API_KEY                        = confluent_api_key.demo_flink.id
-    FLINK_API_SECRET                     = confluent_api_key.demo_flink.secret
+    SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO = "${local.schema_registry_api_key_id}:${local.schema_registry_api_key_secret}"
+    FLINK_API_KEY                        = local.flink_api_key_id
+    FLINK_API_SECRET                     = local.flink_api_key_secret
     FLINK_REST_ENDPOINT                  = data.confluent_flink_region.flink_region.rest_endpoint
-    PRINCIPAL_ID                         = confluent_service_account.demo_app.id
-    FLINK_COMPUTE_POOL_ID                = confluent_flink_compute_pool.pool.id
+    PRINCIPAL_ID                         = local.service_account_id
+    FLINK_COMPUTE_POOL_ID                = local.flink_compute_pool_id
   }
 }
 
@@ -146,7 +149,7 @@ output "backend_env_snippet" {
 # ------------------------------------------------------
 output "flink_compute_pool_id" {
   description = "Flink compute pool ID"
-  value       = confluent_flink_compute_pool.pool.id
+  value       = local.flink_compute_pool_id
 }
 
 output "flink_rest_endpoint" {

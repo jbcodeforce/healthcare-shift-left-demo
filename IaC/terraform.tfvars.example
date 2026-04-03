@@ -16,9 +16,25 @@
 # environment_id    = null
 # kafka_cluster_id  = null
 
-# Example: use existing environment and Kafka cluster (only Flink pool will be created)
+# Example: use existing environment and Kafka cluster
 # environment_id   = "env-xxxxx"
 # kafka_cluster_id = "lkc-xxxxx"
+
+# Optional: use existing service account (leave unset to create new)
+# When set, Terraform will not create a service account and will use the existing one.
+# API keys will still be created for this service account.
+# service_account_id = null
+
+# Example: use existing service account
+# service_account_id = "sa-xxxxx"
+
+# Optional: use existing Flink compute pool (leave unset to create new)
+# When set, Terraform will not create a Flink compute pool and will use the existing one.
+# environment_id must also be set when using existing Flink compute pool.
+# flink_compute_pool_id = null
+
+# Example: use existing Flink compute pool
+# flink_compute_pool_id = "lfcp-xxxxx"
 
 # Flink compute pool
 # flink_compute_pool_name = "healthcare-demo-pool"
