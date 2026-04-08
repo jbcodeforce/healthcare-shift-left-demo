@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS hc_fct_drift_evts (
   name              STRING  COMMENT 'Patient name',
   gender            STRING  COMMENT 'Patient gender',
   birth_date        STRING COMMENT 'Patient birth date',
-  ts                BIGINT NOT NULL COMMENT 'Event time (epoch ms)',
+  ts                TIMESTAMP(3) NOT NULL COMMENT 'Event time',
   prescription_id   STRING COMMENT 'Prescription that defined the target',
   metric_name       STRING NOT NULL COMMENT 'e.g. Pressure, FlowRate, FlowLevel',
   prescribed_value  DOUBLE NOT NULL COMMENT 'Target from prescription',
@@ -19,8 +19,6 @@ CREATE TABLE IF NOT EXISTS hc_fct_drift_evts (
 ) DISTRIBUTED BY HASH(patient_id, device_id, metric_name) INTO 1 BUCKETS
 WITH (
   'changelog.mode' = 'upsert',
-  'key.avro-registry.schema-context' = '.flink-dev',
-  'value.avro-registry.schema-context' = '.flink-dev',
   'key.format' = 'avro-registry',
   'value.format' = 'avro-registry',
   'kafka.retention.time' = '0',

@@ -1,0 +1,22 @@
+kafka:
+  bootstrap.servers: pkc-n98pk.us-west-2.aws.confluent.cloud:9092
+  cluster_id: lkc-jxqypp
+  reject_topics_prefixes: ["clone","dim_","src_"]
+  src_topic_prefix: cdc
+  cluster_type: dev
+confluent_cloud:
+  region: us-west-2
+  provider: aws
+  organization_id: 49cee212-6346-438a-a1fa-d1b1cbd90d44
+flink:
+  catalog_name: health-env
+  database_name: heath-kafka
+  max_cfu: 30
+app:
+  logging: INFO
+  post_fix_unit_test: _jb
+  sql_content_modifier: shift_left.core.utils.table_worker.ReplaceEnvInSqlContent
+  translator_to_flink_sql_agent: shift_left.core.utils.spark_sql_code_agent.SparkToFlinkSqlAgent
+  dml_naming_convention_modifier: shift_left.core.utils.naming_convention.DmlNameModifier
+  compute_pool_naming_convention_modifier: shift_left.core.utils.naming_convention.ComputePoolNameModifier
+

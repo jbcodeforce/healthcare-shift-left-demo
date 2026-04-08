@@ -3,8 +3,9 @@
 # If CONFLUENT_CLOUD_API_KEY is unset, sources set_env_var first.
 # Usage: source ./export_terraform_env.sh && cd IaC && terraform plan
 
-_script="${BASH_SOURCE[0]:-$0}"
-_REPO_ROOT="$(cd "$(dirname "$_script"/..)" && pwd)"
+
+_REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 
 if [[ -z "${CONFLUENT_CLOUD_API_KEY:-}" ]]; then
   # shellcheck source=/dev/null

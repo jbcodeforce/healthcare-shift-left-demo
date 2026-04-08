@@ -2,6 +2,9 @@
 
 locals {
   use_existing_flink_pool = var.flink_compute_pool_id != null && var.flink_compute_pool_id != ""
+  flink_pool_resource_name_supplied = (
+    var.flink_compute_pool_resource_name != null && var.flink_compute_pool_resource_name != ""
+  )
 }
 
 resource "confluent_flink_compute_pool" "pool" {
@@ -17,7 +20,7 @@ resource "confluent_flink_compute_pool" "pool" {
 }
 
 data "confluent_flink_compute_pool" "existing" {
-  count = local.use_existing_flink_pool ? 1 : 0
+  count = local.use_existing_flink_pool && !local.flink_pool_resource_name_supplied ? 1 : 0
   id    = var.flink_compute_pool_id
   environment {
     id = local.environment_id
@@ -25,6 +28,8 @@ data "confluent_flink_compute_pool" "existing" {
 }
 
 locals {
-  flink_compute_pool_id           = local.use_existing_flink_pool ? data.confluent_flink_compute_pool.existing[0].id : confluent_flink_compute_pool.pool[0].id
-  flink_compute_pool_resource_name = local.use_existing_flink_pool ? data.confluent_flink_compute_pool.existing[0].resource_name : confluent_flink_compute_pool.pool[0].resource_name
+  flink_compute_pool_id = local.use_existing_flink_pool ? var.flink_compute_pool_id : confluent_flink_compute_pool.pool[0].id
+  flink_compute_pool_resource_name = local.use_existing_flink_pool ? (
+    local.flink_pool_resource_name_supplied ? var.flink_compute_pool_resource_name : data.confluent_flink_compute_pool.existing[0].resource_name
+  ) : confluent_flink_compute_pool.pool[0].resource_name
 }

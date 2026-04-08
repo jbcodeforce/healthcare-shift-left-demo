@@ -152,6 +152,11 @@ output "flink_compute_pool_id" {
   value       = local.flink_compute_pool_id
 }
 
+output "flink_compute_pool_resource_name" {
+  description = "Flink compute pool CRN (for FlinkDeveloper role binding). Save with flink_compute_pool_resource_name when using an existing pool without API read access."
+  value       = local.flink_compute_pool_resource_name
+}
+
 output "flink_rest_endpoint" {
   description = "Flink region REST endpoint"
   value       = data.confluent_flink_region.flink_region.rest_endpoint

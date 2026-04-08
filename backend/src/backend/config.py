@@ -1,7 +1,9 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import os
 
-
+"""
+Environment-driven settings for Kafka and Schema Registry.
+"""
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="", env_file=".env", extra="ignore")
 
@@ -17,6 +19,13 @@ class Settings(BaseSettings):
     schema_registry_url: str = ""
     schema_registry_basic_auth_user_info: str = ""  # "key:secret"
     schema_subject_prefix: str = ".flink-dev"
+
+    # Kafka consumer (hc_fct_telemetry_1h Avro via Schema Registry)
+    kafka_consumer_topic: str = "hc_fct_telemetry_1h"
+    kafka_consumer_group_id: str = "hc_fct_telemetry_1h-gp"
+    kafka_consumer_enabled: bool = False
+    kafka_consumer_auto_offset_reset: str = "earliest"
+    
 
     # Simulation
     # Simulated narrative time between full rounds (all patients); not wall-clock sleep.

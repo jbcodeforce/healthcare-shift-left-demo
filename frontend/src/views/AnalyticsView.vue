@@ -1,10 +1,13 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { Chart } from 'chart.js/auto'
-import { getDashboardData } from '../api/deviceGenerator.js'
+import { getDashboardData, getTelemetry1hCounts } from '../api/deviceGenerator.js'
 
 const loading = ref(true)
 const error = ref(null)
+const telemetry1h = ref(null)
+const telemetry1hError = ref(null)
+let telemetryPollId = null
 const available = ref(false)
 const message = ref(null)
 const anomaliesPerDevice = ref([])
@@ -149,6 +152,16 @@ function initCharts() {
   )
 }
 
+async function fetchTelemetry1h() {
+  try {
+    const data = await getTelemetry1hCounts()
+    telemetry1h.value = data
+    telemetry1hError.value = null
+  } catch (e) {
+    telemetry1hError.value = e.message || 'Failed to load telemetry 1h counts'
+  }
+}
+
 async function fetchDashboard() {
   loading.value = true
   error.value = null
@@ -159,6 +172,10 @@ async function fetchDashboard() {
     anomaliesPerDevice.value = data.anomalies_per_device ?? []
     configChangesOverTime.value = data.config_changes_over_time ?? []
     newDevicesOverTime.value = data.new_devices_over_time ?? []
+    if (data.telemetry_1h) {
+      telemetry1h.value = data.telemetry_1h
+      telemetry1hError.value = null
+    }
     const { nextTick } = await import('vue')
     await nextTick()
     if (available.value) initCharts()
@@ -170,8 +187,20 @@ async function fetchDashboard() {
   }
 }
 
-onMounted(fetchDashboard)
+async function loadAll() {
+  await fetchTelemetry1h()
+  await fetchDashboard()
+}
+
+onMounted(() => {
+  loadAll()
+  telemetryPollId = window.setInterval(fetchTelemetry1h, 4000)
+})
 onUnmounted(() => {
+  if (telemetryPollId != null) {
+    clearInterval(telemetryPollId)
+    telemetryPollId = null
+  }
   if (chartAnomalies) chartAnomalies.destroy()
   if (chartConfigChanges) chartConfigChanges.destroy()
   if (chartNewDevices) chartNewDevices.destroy()
@@ -183,12 +212,70 @@ onUnmounted(() => {
     <h2>Analytics</h2>
     <p class="muted">Metrics from S3 Parquet / Iceberg tables (DuckDB). Configure ANALYTICS_S3_* or ANALYTICS_LOCAL_PATH to enable.</p>
 
+    <section class="telemetry-1h-widget" aria-label="Hourly telemetry aggregates from Kafka">
+      <h3>1-hour telemetry windows (live)</h3>
+      <p class="muted small">
+        Counts from Flink topic <code>{{ telemetry1h?.topic ?? 'hc_fct_telemetry_1h' }}</code> as consumed by this API server.
+        Set <code>KAFKA_CONSUMER_ENABLED=true</code> (and Kafka / Schema Registry env) to populate.
+      </p>
+      <p v-if="telemetry1hError" class="error">{{ telemetry1hError }}</p>
+      <template v-else-if="telemetry1h">
+        <p v-if="!telemetry1h.consumer_enabled" class="hint">
+          Consumer is disabled. Enable <code>KAFKA_CONSUMER_ENABLED</code> and restart the backend to stream aggregates.
+        </p>
+        <div v-else class="stat-row">
+          <div class="stat-card">
+            <span class="stat-label">1h windows received</span>
+            <span class="stat-value">{{ telemetry1h.windows_received }}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Readings in windows (Σ count_reading)</span>
+            <span class="stat-value">{{ telemetry1h.total_readings_in_windows }}</span>
+          </div>
+          <div class="stat-card" v-if="telemetry1h.last_message_at">
+            <span class="stat-label">Last message (UTC)</span>
+            <span class="stat-value stat-small">{{ telemetry1h.last_message_at }}</span>
+          </div>
+        </div>
+        <div v-if="telemetry1h.consumer_enabled && telemetry1h.by_device?.length" class="mini-tables">
+          <div class="mini-table-wrap">
+            <h4>By device</h4>
+            <table class="data-table compact">
+              <thead>
+                <tr><th>Device</th><th>Windows</th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in telemetry1h.by_device" :key="row.device_id">
+                  <td>{{ row.device_id }}</td>
+                  <td>{{ row.count }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="mini-table-wrap">
+            <h4>By metric</h4>
+            <table class="data-table compact">
+              <thead>
+                <tr><th>Metric</th><th>Windows</th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in telemetry1h.by_metric" :key="row.metric_name">
+                  <td>{{ row.metric_name }}</td>
+                  <td>{{ row.count }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </template>
+    </section>
+
     <div v-if="loading" class="loading">Loading analytics…</div>
     <p v-else-if="error" class="error">{{ error }}</p>
     <div v-else-if="!available" class="unavailable">
       <p><strong>Analytics not available</strong></p>
       <p v-if="message" class="muted">{{ message }}</p>
-      <button type="button" @click="fetchDashboard">Retry</button>
+      <button type="button" @click="loadAll">Retry</button>
     </div>
 
     <template v-else>
@@ -209,7 +296,7 @@ onUnmounted(() => {
         </div>
       </section>
       <div class="refresh">
-        <button type="button" @click="fetchDashboard">Refresh</button>
+        <button type="button" @click="loadAll">Refresh</button>
       </div>
     </template>
   </div>
@@ -218,6 +305,89 @@ onUnmounted(() => {
 <style scoped>
 .analytics-view h2 {
   margin-bottom: 0.5rem;
+}
+.telemetry-1h-widget {
+  margin-bottom: 1.75rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--code-bg);
+}
+.telemetry-1h-widget h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+}
+.telemetry-1h-widget h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+.small {
+  font-size: 0.85rem;
+}
+.hint {
+  margin: 0.5rem 0 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 6px;
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  font-size: 0.9rem;
+}
+.stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+.stat-card {
+  min-width: 140px;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.stat-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+  color: var(--text);
+}
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-h);
+}
+.stat-small {
+  font-size: 0.95rem;
+  font-weight: 500;
+  word-break: break-all;
+}
+.mini-tables {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+.telemetry-1h-widget .data-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--border);
+}
+.telemetry-1h-widget .data-table th,
+.telemetry-1h-widget .data-table td {
+  border: 1px solid var(--border);
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+}
+.telemetry-1h-widget .data-table th {
+  background: var(--bg);
+  font-size: 0.8rem;
+}
+.telemetry-1h-widget .data-table.compact {
+  font-size: 0.875rem;
 }
 .muted {
   color: var(--text);

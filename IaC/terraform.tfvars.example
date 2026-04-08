@@ -28,6 +28,9 @@
 # Example: use existing service account
 # service_account_id = "sa-xxxxx"
 
+# If apply fails with 409 (service account name in use), pick a unique name or use service_account_id above
+# service_account_display_name = "health-demo-app-usw2"
+
 # Optional: use existing Flink compute pool (leave unset to create new)
 # When set, Terraform will not create a Flink compute pool and will use the existing one.
 # environment_id must also be set when using existing Flink compute pool.
@@ -35,6 +38,9 @@
 
 # Example: use existing Flink compute pool
 # flink_compute_pool_id = "lfcp-xxxxx"
+# If plan/destroy returns 403 on reading the pool, set the pool CRN (skip data source).
+# Must be crn://... — not the pool display name (that is flink_compute_pool_name when creating a pool).
+# flink_compute_pool_resource_name = "crn://..."
 
 # Flink compute pool
 # flink_compute_pool_name = "healthcare-demo-pool"

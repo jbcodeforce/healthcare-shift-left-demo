@@ -4,11 +4,11 @@ import logging
 from typing import Any, Callable, Optional
 
 from confluent_kafka import Producer, SerializingProducer
-from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
 from confluent_kafka.serialization import SerializationContext
 
 from backend.config import get_settings
+from backend.schema_registry_client import get_schema_registry_client
 from backend.schema import (
     DeviceMetricsKey,
     DeviceMetricsValue,
@@ -37,17 +37,9 @@ _avro_value_serializer: AvroSerializer | None = None
 _topic: str = ""
 
 
-def _get_schema_registry_client() -> SchemaRegistryClient:
-    s = get_settings()
-    conf: dict[str, str] = {"url": f"{s.schema_registry_url}"}
-    if s.schema_registry_basic_auth_user_info:
-        conf["basic.auth.user.info"] = s.schema_registry_basic_auth_user_info
-    return SchemaRegistryClient(conf)
-
-
 def _get_schema_from_registry(subject: str):
     """Fetch the latest schema for the subject from Schema Registry (no new schema pushed)."""
-    registry = _get_schema_registry_client()
+    registry = get_schema_registry_client()
     registered = registry.get_latest_version(subject)
     return registered, registered.schema
 
@@ -67,7 +59,7 @@ def init_producer() -> None:
         "sasl.username": s.kafka_sasl_username,
         "sasl.password": s.kafka_sasl_password,
     }
-    registry = _get_schema_registry_client()
+    registry = get_schema_registry_client(s)
     topic = s.kafka_topic
     key_subject = f":{s.schema_subject_prefix}:{topic}-key"
     value_subject = f":{s.schema_subject_prefix}:{topic}-value"

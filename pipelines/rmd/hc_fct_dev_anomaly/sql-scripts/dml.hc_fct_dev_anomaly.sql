@@ -1,3 +1,5 @@
+
+INSERT INTO hc_fct_dev_anomaly
 with pressure_records as (
   select 
      device_id,

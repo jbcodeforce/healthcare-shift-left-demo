@@ -205,3 +205,13 @@ export async function getDashboardData() {
   if (!res.ok) throw new Error(`Analytics failed: ${res.status}`)
   return res.json()
 }
+
+/**
+ * Live counts from hc_fct_telemetry_1h consumed in this backend (Kafka consumer).
+ * @returns { Promise<{ consumer_enabled: boolean, topic: string, windows_received: number, total_readings_in_windows: number, by_device: Array<{ device_id: string, count: number }>, by_metric: Array<{ metric_name: string, count: number }>, last_message_at: string | null }> }
+ */
+export async function getTelemetry1hCounts() {
+  const res = await fetch(`${apiBase}/analytics/telemetry-1h-counts`)
+  if (!res.ok) throw new Error(`Telemetry 1h counts failed: ${res.status}`)
+  return res.json()
+}

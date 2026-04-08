@@ -39,8 +39,10 @@ This folder contains Terraform definitions for the healthcare-shift-left-demo Co
 Reuse [`backend/.env`](../backend/.env) to supply **only** Terraform variables (`TF_VAR_*`) such as `confluent_cloud_api_key` / `confluent_cloud_api_secret`, `cloud_provider`, `environment_id`, etc. From the **repository root**:
 
 ```sh
-source ./set_env_var && source ./export_terraform_env.sh
-cd IaC && terraform plan
+source ./set_env_var && cd scripts && source ./export_terraform_env.sh
+cd ../IaC 
+terraform init -upgrade
+terraform plan
 ```
 
 [`export_terraform_env.sh`](../export_terraform_env.sh) maps `.env` names to Terraform inputs (see [`backend/.env.example`](../backend/.env.example)). It does **not** set removed variables for Flink keys; those come from Terraform outputs after apply.
@@ -58,7 +60,7 @@ export TF_VAR_confluent_cloud_api_secret="<your-cloud-api-secret>"
 
 Or copy `terraform.tfvars.example` to `terraform.tfvars` and set values there.
 
-### After apply: backend Kafka / SR / Flink keys
+### After terraform  apply: backend Kafka / SR / Flink keys
 
 Terraform creates a **demo app service account** and **three API keys** (Kafka, Schema Registry, Flink). Key **secrets** are stored in Terraform state; treat state as confidential.
 
@@ -94,7 +96,8 @@ terraform apply
 - **Use existing environment:** Set `environment_id = "env-xxxxx"` in `terraform.tfvars` or via `-var`. Terraform will create the Kafka cluster (if not existing), service account, Flink pool, and keys in that environment.
 - **Use existing environment and Kafka:** Set both `environment_id` and `kafka_cluster_id`. Terraform will create the service account, Flink compute pool, and demo app keys. **When using `kafka_cluster_id`, `environment_id` must also be set** (the cluster belongs to that environment).
 - **Use existing service account:** Set `service_account_id = "sa-xxxxx"`. Terraform will use the existing service account and create API keys for it. The service account must already have the necessary RBAC permissions, or Terraform will attempt to add them.
-- **Use existing Flink compute pool:** Set `flink_compute_pool_id = "lfcp-xxxxx"` and `environment_id`. Terraform will use the existing Flink compute pool instead of creating a new one.
+- **409 on create service account (name in use):** Either set `service_account_id` for the account that already owns that name, or set `service_account_display_name` to a unique name (defaults to `{prefix}-demo-app`).
+- **Use existing Flink compute pool:** Set `flink_compute_pool_id = "lfcp-xxxxx"` and `environment_id`. Terraform will use the existing Flink compute pool instead of creating a new one. If `terraform plan` / `destroy` fails with **403 Forbidden** on `data.confluent_flink_compute_pool.existing`, your Cloud API key cannot read Flink compute pools: use a key with **Organization Admin** / **FlinkAdmin** (environment scope), or set `flink_compute_pool_resource_name` to the pool’s CRN (from `terraform output` after a successful apply, or the Confluent Console) so Terraform skips that API read.
 - **Attach to fully existing infrastructure:** Set `environment_id`, `kafka_cluster_id`, `service_account_id`, and `flink_compute_pool_id` to use all existing resources. Terraform will only create API keys and optionally deploy Flink statements.
 
 Example with existing resources:
@@ -186,6 +189,7 @@ Useful outputs:
 | `environment_id`             | No       | Existing environment ID; when set, no environment is created |
 | `kafka_cluster_id`           | No       | Existing Kafka cluster ID; when set, no cluster is created (requires `environment_id`) |
 | `service_account_id`         | No       | Existing service account ID; when set, no service account is created (API keys still created) |
+| `service_account_display_name` | No   | Override display name when creating the demo service account (avoid 409 if `{prefix}-demo-app` exists) |
 | `flink_compute_pool_id`      | No       | Existing Flink compute pool ID; when set, no pool is created (requires `environment_id`) |
 | `cloud_provider`             | No       | e.g. `AWS` (default) |
 | `cloud_region`               | No       | e.g. `us-west-2` (default) |

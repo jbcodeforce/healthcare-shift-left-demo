@@ -16,9 +16,7 @@ if [ -f "$BACKEND_DIR/.env" ]; then
 fi
 CONNECTOR_NAME="${DEBEZIUM_CONNECTOR_NAME:-debezium-postgres-healthcare}"
 DATA_TOPIC="${DEBEZIUM_TOPIC_PREFIX:-healthcare}.public.prescriptions"
-CC_ENV_NAME="${FLINK_ENV_NAME}"
-CC_KAFKA_NAME="${FLINK_DATABASE_NAME}"
-
+KAFKA_CONSUMER_ENABLED="${KAFKA_CONSUMER_ENABLED:-true}"
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -247,8 +245,8 @@ echo -e "${GREEN}Development environment is running!${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e ""
 echo -e "  ${YELLOW}Frontend:${NC}       http://localhost:5173"
-echo -e "  ${YELLOW}Confluent Cloud Environment:${NC}       ${CC_ENV_NAME}"
-echo -e "  ${YELLOW}Confluent Cloud Kafka:${NC}       ${CC_KAFKA_NAME}"
+echo -e "  ${YELLOW}Confluent Cloud Environment:${NC}       ${FLINK_ENV_NAME}"
+echo -e "  ${YELLOW}Confluent Cloud Kafka:${NC}       ${FLINK_DATABASE_NAME}"
 echo -e "  ${YELLOW}Backend API Docs:${NC}       http://localhost:8000/docs"
 echo -e "  ${YELLOW}Kafka Connect:${NC}  ${CONNECT_URL} (if started)"
 echo -e ""

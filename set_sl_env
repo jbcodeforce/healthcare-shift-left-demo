@@ -11,9 +11,9 @@ export SL_CONFLUENT_CLOUD_API_KEY=$CONFLUENT_CLOUD_API_KEY
 export SL_CONFLUENT_CLOUD_API_SECRET=$CONFLUENT_CLOUD_API_SECRET
 export SL_CONFLUENT_PRINCIPAL_ID=$PRINCIPAL_ID
 
-export FLINK_PROJECT=$HOME/Documents/Code/healthcare-shift-left-demo
+export FLINK_PROJECT=$_REPO_ROOT
 export PIPELINES=$FLINK_PROJECT/pipelines
-export CONFIG_FILE=$HOME/Documents/Code/shift_left_utils/src/shift_left/tests/config-ccloud.yaml
+export CONFIG_FILE=$_REPO_ROOT/scripts/config-ccloud.yaml
 
 export CCLOUD_KAFKA_CLUSTER=$FLINK_DATABASE_NAME
 export CCLOUD_ENV_ID=$FLINK_ENV_ID

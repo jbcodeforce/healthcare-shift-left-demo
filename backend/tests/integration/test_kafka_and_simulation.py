@@ -3,7 +3,8 @@
 import time
 
 import pytest
-from backend.producer import flush_producer, init_producer, produce_device_metric, _get_schema_registry_client
+from backend.producer import flush_producer, init_producer, produce_device_metric
+from backend.schema_registry_client import get_schema_registry_client
 from backend.simulation import is_simulation_running, stop_simulation
 from backend.schema import DeviceMetricsValue
 
@@ -12,7 +13,7 @@ from ..conftest import requires_kafka
 def test_get_schema_subjects(client) -> None:
     """Get the schema subjects from the Schema Registry."""
     init_producer()
-    registry = _get_schema_registry_client()
+    registry = get_schema_registry_client()
     subjects = registry.get_subjects(subject_prefix=".flink_dev")
     print(subjects)
     assert subjects is not None

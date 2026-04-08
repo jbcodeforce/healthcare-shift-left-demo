@@ -4,8 +4,11 @@ import asyncio
 import json
 import logging
 import queue
+import threading
 from contextlib import asynccontextmanager
 from typing import Literal
+
+from backend.config import get_settings
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
@@ -43,6 +46,8 @@ from backend.simulator import (
     run_pressure_oscillate,
     run_flow_level_down,
 )
+from backend.telemetry_1h_consumer import create_telemetry_1h_consumer, log_consumed_record, run_poll_loop
+from backend.telemetry_1h_stats import record_consumed_message
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -71,12 +76,45 @@ async def _broadcast_telemetry() -> None:
                     pass
 
 
+def _telemetry_1h_consumer_thread_target(settings, stop_event: threading.Event) -> None:
+    try:
+        consumer = create_telemetry_1h_consumer(settings)
+    except Exception:
+        logger.exception("Failed to create hc_fct_telemetry_1h Kafka consumer")
+        return
+
+    def on_message(key, value, topic, partition, offset):
+        record_consumed_message(key, value, topic, partition, offset)
+        log_consumed_record(key, value, topic, partition, offset)
+
+    run_poll_loop(consumer, stop_event=stop_event, on_message=on_message)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _sse_subscribers_lock
     _sse_subscribers_lock = asyncio.Lock()
     set_telemetry_sink(_telemetry_queue)
     task = asyncio.create_task(_broadcast_telemetry())
+
+    consumer_stop: threading.Event | None = None
+    consumer_thread: threading.Thread | None = None
+    s = get_settings()
+    if s.kafka_consumer_enabled and s.kafka_bootstrap_servers and s.schema_registry_url:
+        consumer_stop = threading.Event()
+        consumer_thread = threading.Thread(
+            target=_telemetry_1h_consumer_thread_target,
+            args=(s, consumer_stop),
+            name="hc_fct_telemetry_1h_consumer",
+            daemon=True,
+        )
+        consumer_thread.start()
+        logger.info(
+            "Kafka consumer thread started for topic %s (group=%s)",
+            s.kafka_consumer_topic,
+            s.kafka_consumer_group_id,
+        )
+
     # Seed prescriptions table if PostgreSQL is configured and empty
     try:
         ensure_prescriptions_table()
@@ -89,6 +127,12 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.debug("Prescriptions seed skipped or failed: %s", e)
     yield
+    if consumer_stop is not None:
+        consumer_stop.set()
+    if consumer_thread is not None:
+        consumer_thread.join(timeout=8.0)
+        if consumer_thread.is_alive():
+            logger.warning("Kafka consumer thread did not stop within timeout")
     task.cancel()
     try:
         await task
@@ -407,9 +451,25 @@ def analytics_new_devices_over_time() -> dict:
     return {"available": True, "data": data}
 
 
+@app.get("/analytics/telemetry-1h-counts")
+@app.get("/api/analytics/telemetry-1h-counts", include_in_schema=False)
+def analytics_telemetry_1h_counts() -> dict:
+    """Live counts from hc_fct_telemetry_1h consumed in this backend process (Kafka consumer thread).
+
+    Registered twice: some reverse proxies forward the full URI (``/api/...``) to the app without
+    stripping the prefix; the duplicate path avoids 404 in that setup.
+    """
+    from backend.telemetry_1h_stats import get_telemetry_1h_widget_payload
+
+    return get_telemetry_1h_widget_payload()
+
+
 @app.get("/analytics/dashboard")
 def analytics_dashboard() -> dict:
     """All dashboard metrics in one response."""
+    from backend.telemetry_1h_stats import get_telemetry_1h_widget_payload
+
+    telemetry_1h = get_telemetry_1h_widget_payload()
     if not analytics_configured():
         return {
             "available": False,
@@ -417,6 +477,7 @@ def analytics_dashboard() -> dict:
             "config_changes_over_time": [],
             "new_devices_over_time": [],
             "message": "Analytics not configured (set ANALYTICS_S3_* or ANALYTICS_LOCAL_PATH).",
+            "telemetry_1h": telemetry_1h,
         }
     payload = get_dashboard_data()
     return {
@@ -424,6 +485,7 @@ def analytics_dashboard() -> dict:
         "anomalies_per_device": payload["anomalies_per_device"],
         "config_changes_over_time": payload["config_changes_over_time"],
         "new_devices_over_time": payload["new_devices_over_time"],
+        "telemetry_1h": telemetry_1h,
     }
 
 
