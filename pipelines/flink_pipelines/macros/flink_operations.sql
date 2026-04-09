@@ -11,7 +11,7 @@
     'compute_pool_id': env_var('FLINK_COMPUTE_POOL_ID'),
     'principal_id': env_var('PRINCIPAL_ID'),
     'env_id': env_var('ENV_ID'),
-    'org_id': env_var('ORG_ID', '5f242057-6c74-4ba5-9942-60d363203b93'),
+    'org_id': env_var('ORG_ID', ''),
     'kafka_cluster_display_name': env_var('KAFKA_CLUSTER_DISPLAY_NAME', 'healthcare-shift-left-demo-cluster'),
     'env_display_name': env_var('ENV_DISPLAY_NAME', 'healthcare-shift-left-demo')
   } %}

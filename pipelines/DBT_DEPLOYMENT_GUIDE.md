@@ -4,22 +4,14 @@
 
 This implementation enables deploying Flink SQL pipelines to Confluent Cloud using **dbt** as requested in Issue #3.
 
-### Components Created:
+### Components
 
-1. **dbt Project** (`pipelines/flink_pipelines/`)
-   - Organized model structure by layer (raw, rmd)
-   - Schema definitions with metadata
-   - Custom macros for Flink operations
-
-2. **Python Deployment Script** (`deploy_flink.py`)
-   - Deploys SQL files via Confluent REST API
-   - Reads from existing `inventory.json`
-   - Supports layer-by-layer or full deployment
-
-3. **Documentation**
-   - Model schemas with descriptions
-   - README with usage instructions
-   - Integration guide
+1. **`pipelines/inventory.json`** — DDL/DML paths per table.
+2. **`generate_flink_models.py`** — builds **`models/flink/**`** ephemeral models with **`meta.deploy_sequence`**.
+3. **`dbt compile`** → **`target/manifest.json`** **`compiled_code`** (Flink SQL).
+4. **`dbt_flink_deploy.py`** — compile + **`deploy_from_manifest()`** (REST).
+5. **`deploy_flink.py`** — REST from inventory paths only.
+6. **Macros** — `deploy_flink_pipelines` run-operation (shell hints).
 
 ## 🚀 How to Use
 
@@ -36,28 +28,52 @@ pip install -r requirements.txt
 source backend/.env
 ```
 
+### Regenerate dbt models (when inventory changes)
+
+```bash
+cd pipelines/flink_pipelines
+python3 generate_flink_models.py
+```
+
+Commit updated files under `models/flink/`.
+
 ### Deploy Flink Pipelines
 
-#### Option 1: Deploy Everything
+#### Option A (full dbt pipeline — recommended)
+
+Runs **`dbt compile`**, then deploys **`compiled_code`** from **`target/manifest.json`** in **`deploy_sequence`** order:
+
+```bash
+cd pipelines/flink_pipelines
+python3 dbt_flink_deploy.py --all
+python3 dbt_flink_deploy.py --layer raw
+python3 dbt_flink_deploy.py --table hc_raw_patients
+```
+
+Reuse the last compile without re-running dbt:
+
+```bash
+python3 dbt_flink_deploy.py --skip-dbt-compile --all
+```
+
+Same REST behavior as inventory, but skip dbt entirely:
+
+```bash
+python3 dbt_flink_deploy.py --legacy-inventory --all
+```
+
+Print shell reminders from repo root:
+
+```bash
+dbt run-operation deploy_flink_pipelines --project-dir pipelines/flink_pipelines --profiles-dir pipelines/flink_pipelines
+```
+
+#### Option B: REST deploy only (`deploy_flink.py`)
 
 ```bash
 cd pipelines/flink_pipelines
 python3 deploy_flink.py --all
-```
-
-#### Option 2: Deploy by Layer
-
-```bash
-# Deploy raw layer first
-python3 deploy_flink.py --layer raw
-
-# Then deploy rmd layer
 python3 deploy_flink.py --layer rmd
-```
-
-#### Option 3: Deploy Single Table
-
-```bash
 python3 deploy_flink.py --table hc_raw_patients
 ```
 
@@ -75,15 +91,17 @@ dbt docs serve
 pipelines/
 ├── flink_pipelines/           # dbt project root
 │   ├── dbt_project.yml        # dbt configuration
-│   ├── deploy_flink.py        # Deployment script
-│   ├── README.md              # Detailed documentation
+│   ├── profiles.yml           # Postgres profile (compile/docs)
+│   ├── generate_flink_models.py
+│   ├── flink_deployer.py
+│   ├── dbt_flink_deploy.py    # dbt compile + manifest deploy
+│   ├── deploy_flink.py        # inventory-only REST CLI
+│   ├── README.md
 │   ├── models/
-│   │   ├── raw/               # Raw layer documentation
-│   │   │   └── schema.yml
-│   │   └── rmd/               # RMD layer documentation
-│   │       ├── sources/
-│   │       ├── dimensions/
-│   │       └── facts/
+│   │   └── flink/
+│   │       ├── raw/           # generated flink__*__ddl.sql / __dml.sql
+│   │       ├── rmd/
+│   │       └── schema.yml
 │   └── macros/
 │       ├── flink_deploy.sql
 │       ├── flink_operations.sql
@@ -106,37 +124,19 @@ pipelines/
 
 ## 🎯 Deployment Flow
 
-### Automated Dependency Order
+### Deployment order
 
-The deployment script automatically deploys in this order:
+**`dbt_flink_deploy.py` (default):** statements run in ascending **`meta.deploy_sequence`** (set by `generate_flink_models.py`). That follows **`inventory.json` key order**: for each **`product_name`** `raw` then `rmd`, each table gets **DDL then DML**.
 
-```
-Phase 1: Raw Layer (DDL + DML)
-  ├── hc_raw_patients
-  ├── hc_raw_devices
-  └── hc_raw_device_metrics
-
-Phase 2: RMD Sources (DDL + DML)
-  ├── hc_src_patients
-  ├── hc_src_devices
-  └── hc_src_prescriptions
-
-Phase 3: Dimensions (DDL + DML)
-  └── hc_dim_patients
-
-Phase 4: Facts (DDL + DML)
-  ├── hc_fct_drift_evts
-  ├── hc_fct_dev_anomaly
-  └── hc_fct_telemetry_1h
-```
+**`deploy_flink.py` / `--legacy-inventory`:** same ordering, reading SQL files from **`inventory.json`** paths directly.
 
 ## 🔧 How It Works
 
-1. **Inventory-Driven**: Reads `pipelines/inventory.json` for table definitions
-2. **SQL File Reuse**: Uses existing SQL files (no duplication)
-3. **REST API Deployment**: Posts statements to Confluent Flink REST API
-4. **dbt Integration**: Uses dbt for documentation and organization
-5. **Environment-Based**: Credentials from `backend/.env`
+1. **Inventory** defines DDL/DML paths.
+2. **Generator** copies SQL into dbt models under **`models/flink/`** (regenerate when inventory changes).
+3. **`dbt compile`** fills **`compiled_code`** on each model in **`manifest.json`**.
+4. **Deploy** POSTs each compiled statement to Confluent Flink REST (plus **`.properties`** for DML when present).
+5. **Credentials** from **`backend/.env`**.
 
 ## 📊 Comparison with Other Methods
 
@@ -151,21 +151,21 @@ Phase 4: Facts (DDL + DML)
 - ✅ dbt enabled under pipelines folder
 - ✅ dbt configuration for DDL/DML deployment
 - ✅ Correct deployment order maintained
-- ✅ `dbt run` equivalent (via Python script)
+- ✅ `dbt compile` + manifest-driven deploy (via `dbt_flink_deploy.py`)
 - ✅ Data engineer can deploy pipelines easily
 
 ## 🎓 Example Workflow
 
 ```bash
-# 1. Make changes to SQL files
+# 1. Edit Flink SQL under pipelines/raw or pipelines/rmd
 vim pipelines/rmd/hc_fct_drift_evts/sql-scripts/dml.hc_fct_drift_evts.sql
 
-# 2. Update documentation (optional)
-vim pipelines/flink_pipelines/models/rmd/facts/schema.yml
-
-# 3. Deploy to Flink
+# 2. If inventory.json changed, regenerate dbt models
 cd pipelines/flink_pipelines
-python3 deploy_flink.py --table hc_fct_drift_evts
+python3 generate_flink_models.py
+
+# 3. Compile + deploy
+python3 dbt_flink_deploy.py --table hc_fct_drift_evts
 
 # 4. Verify in Confluent Cloud
 confluent flink statement list
@@ -187,7 +187,10 @@ source backend/.env
 
 # Verify
 echo $FLINK_API_KEY
+echo $ORG_ID
 ```
+
+`ORG_ID` must be set to your Confluent organization UUID (used in the Flink REST URL). Empty `ORG_ID` fails fast in `flink_deployer.py`.
 
 ### Deployment Fails
 
@@ -201,15 +204,14 @@ confluent flink statement describe <statement-name>
 
 ### dbt Warnings
 
-Warnings about "matching node" are expected - we use schema.yml for documentation only, not actual dbt models.
+If you add `schema.yml` patches, ensure `name:` matches a model under `models/flink/`.
 
 ## 🎉 Summary
 
-Issue #3 is now complete! You can deploy Flink pipelines using:
-
 ```bash
 cd pipelines/flink_pipelines
-python3 deploy_flink.py --all
+python3 generate_flink_models.py    # when inventory.json changes
+python3 dbt_flink_deploy.py --all  # compile + deploy from manifest
 ```
 
-This provides a dbt-integrated approach while reusing all existing SQL files.
+Or: `python3 deploy_flink.py --all` / `python3 dbt_flink_deploy.py --legacy-inventory --all` for inventory-only REST.

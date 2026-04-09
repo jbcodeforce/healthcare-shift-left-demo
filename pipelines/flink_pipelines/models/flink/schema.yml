@@ -1,0 +1,7 @@
+version: 2
+
+models:
+  - name: flink__hc_raw_patients__ddl
+    description: Flink DDL for raw patients (generated)
+  - name: flink__hc_raw_patients__dml
+    description: Flink DML for raw patients (generated)

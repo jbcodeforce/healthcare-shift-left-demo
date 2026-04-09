@@ -18,7 +18,6 @@ SELECT
   CASE
     WHEN m.metric_value > p.target_value + COALESCE(p.tolerance_range, 0) THEN 'Above range'
     WHEN m.metric_value < p.target_value - COALESCE(p.tolerance_range, 0) THEN 'Below range'
-    ELSE 'In range'
   END                               AS drift_direction,
   m.metric_value - p.target_value   AS deviation,
   CONCAT(

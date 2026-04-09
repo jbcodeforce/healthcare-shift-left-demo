@@ -5,8 +5,8 @@ locals {
 }
 
 resource "confluent_environment" "env" {
-  count         = local.use_existing_env ? 0 : 1
-  display_name  = "${var.prefix}-env"
+  count        = local.use_existing_env ? 0 : 1
+  display_name = "${var.prefix}-env"
   stream_governance {
     package = "ESSENTIALS"
   }

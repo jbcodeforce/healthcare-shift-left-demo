@@ -1,14 +1,13 @@
-# Healthcare Shift-Left Demo - Flink Pipeline Deployment via dbt
-# Deploys Flink SQL statements to Confluent Cloud in correct dependency order
+# dbt project: Flink SQL is materialized as ephemeral models under models/flink/
+# (generated from pipelines/inventory.json). Deploy uses compiled_code from the
+# manifest after `dbt compile`.
 
 name: 'flink_pipelines'
 version: '1.0.0'
 config-version: 2
 
-# This setting configures which "profile" dbt uses for this project.
 profile: 'flink_pipelines'
 
-# File paths
 model-paths: ["models"]
 analysis-paths: ["analyses"]
 test-paths: ["tests"]
@@ -21,53 +20,13 @@ clean-targets:
   - "dbt_packages"
   - "logs"
 
-# Variables accessible in models
 vars:
   schema_context: '.flink-dev'
   kafka_retention_time: '0'
   kafka_compression_type: 'snappy'
 
-# Model configurations
 models:
   flink_pipelines:
-    # Disable postgres materialization - we use custom Flink deployment
     +materialized: ephemeral
-
-    # Raw layer - Kafka source tables (DDL + DML)
-    raw:
-      +tags: ['raw', 'layer:raw']
-      +meta:
-        layer: 'raw'
-        deployment_phase: 1
-
-    # RMD layer - Refined/modeled data
-    rmd:
-      +tags: ['rmd', 'layer:rmd']
-      +meta:
-        layer: 'rmd'
-
-      # Source tables (transformations on raw)
-      sources:
-        +tags: ['source']
-        +meta:
-          deployment_phase: 2
-
-      # Dimension tables
-      dimensions:
-        +tags: ['dimension']
-        +meta:
-          deployment_phase: 3
-
-      # Fact tables
-      facts:
-        +tags: ['fact']
-        +meta:
-          deployment_phase: 4
-
-# On-run hooks for Flink deployment
-# These execute before/after dbt run
-on-run-start:
-  - "{{ log('Starting Flink pipeline deployment to Confluent Cloud', info=True) }}"
-
-on-run-end:
-  - "{{ log('Flink pipeline deployment complete', info=True) }}"
+    flink:
+      +tags: ['flink']

@@ -36,7 +36,7 @@
          "children": []
       },
       {
-         "table_name": "hc_fct_dev_anomaly",
+         "table_name": "No-Table",
          "product_name": "rmd",
          "type": "unknown-type",
          "dml_ref": "pipelines/rmd/hc_fct_dev_anomaly/sql-scripts/dml.hc_fct_dev_anomaly.sql",

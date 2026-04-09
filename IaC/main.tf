@@ -7,6 +7,14 @@ terraform {
       source  = "confluentinc/confluent"
       version = ">= 2.57.0"
     }
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
   }
 }
 
@@ -19,16 +27,16 @@ provider "confluent" {
   cloud_api_key    = var.confluent_cloud_api_key
   cloud_api_secret = var.confluent_cloud_api_secret
 
-  kafka_id              = ""
-  kafka_api_key         = ""
-  kafka_api_secret      = ""
-  kafka_rest_endpoint   = ""
+  kafka_id            = ""
+  kafka_api_key       = ""
+  kafka_api_secret    = ""
+  kafka_rest_endpoint = ""
 
-  schema_registry_id              = ""
-  schema_registry_api_key         = ""
-  schema_registry_api_secret      = ""
-  schema_registry_rest_endpoint   = ""
-  catalog_rest_endpoint           = ""
+  schema_registry_id            = ""
+  schema_registry_api_key       = ""
+  schema_registry_api_secret    = ""
+  schema_registry_rest_endpoint = ""
+  catalog_rest_endpoint         = ""
 
   flink_api_key         = ""
   flink_api_secret      = ""

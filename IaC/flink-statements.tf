@@ -22,15 +22,15 @@ locals {
   # Convert from inventory format to our internal format
   tables = {
     for table_name, config in local.inventory : table_name => {
-      table_name       = config.table_name
-      product_name     = config.product_name
-      type             = config.type
-      ddl_path         = "${path.module}/../${config.ddl_ref}"
-      dml_path         = config.dml_ref != null && config.dml_ref != "" ? "${path.module}/../${config.dml_ref}" : null
+      table_name   = config.table_name
+      product_name = config.product_name
+      type         = config.type
+      ddl_path     = "${path.module}/../${config.ddl_ref}"
+      dml_path     = config.dml_ref != null && config.dml_ref != "" ? "${path.module}/../${config.dml_ref}" : null
       # Properties file is derived from DML path: replace .sql with .properties
-      properties_path  = config.dml_ref != null && config.dml_ref != "" ? "${path.module}/../${replace(config.dml_ref, ".sql", ".properties")}" : null
-      has_dml          = config.dml_ref != null && config.dml_ref != ""
-      category         = config.product_name
+      properties_path = config.dml_ref != null && config.dml_ref != "" ? "${path.module}/../${replace(config.dml_ref, ".sql", ".properties")}" : null
+      has_dml         = config.dml_ref != null && config.dml_ref != ""
+      category        = config.product_name
     }
   }
 

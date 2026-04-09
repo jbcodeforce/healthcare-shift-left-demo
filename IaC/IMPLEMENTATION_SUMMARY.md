@@ -112,6 +112,18 @@ terraform apply \
    └── dml.<table_name>.properties   # Optional
    ```
 
+2. **Update inventory.json**:
+   ```json
+   {
+     "table_name": "your_table_name",
+     "product_name": "raw or rmd",
+     "type": "unknown-type",
+     "dml_ref": "pipelines/<layer>/<table>/sql-scripts/dml.<table>.sql",
+     "ddl_ref": "pipelines/<layer>/<table>/sql-scripts/ddl.<table>.sql",
+     "table_folder_name": "pipelines/<layer>/<table>"
+   }
+   ```
+
 3. **Run terraform apply**:
    ```bash
    terraform apply

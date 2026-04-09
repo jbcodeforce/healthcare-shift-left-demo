@@ -5,11 +5,11 @@ locals {
 }
 
 resource "confluent_kafka_cluster" "kafka" {
-  count         = local.use_existing_kafka ? 0 : 1
-  display_name  = "${var.prefix}-kafka"
-  availability  = "SINGLE_ZONE"
-  cloud         = var.cloud_provider
-  region        = var.cloud_region
+  count        = local.use_existing_kafka ? 0 : 1
+  display_name = "${var.prefix}-kafka"
+  availability = "SINGLE_ZONE"
+  cloud        = var.cloud_provider
+  region       = var.cloud_region
   standard {}
 
   environment {
