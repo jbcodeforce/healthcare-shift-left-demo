@@ -49,7 +49,7 @@ The provider integration acts as a trusted identity. See [step by step instructi
    ![](./images/tf-topic-1.png)
 * Select existing Cloud Provider Integration and target S3 bucket
    ![](./images/tf-topic-2.png)
-   
+
 ---
 
 
@@ -75,62 +75,6 @@ You'll need:
 - **IAM Role ARN**: `arn:aws:iam::YOUR_ACCOUNT_ID:role/health-demo-role`
 - **External ID**: Your Confluent External ID
 
----
-
-## Connection 2: Prescription Changes Data
-
-Repeat the same steps for the drift events table:
-
-1. **Create Connection**: `hc_fct_drift_evts_s3`
-   - Same IAM Role ARN
-   - Same External ID
-
-2. **Create Sink**:
-   - Source Table: `hc_fct_drift_evts`
-   - Destination: `s3://your-bucket/prescription_changes/`
-   - Format: Parquet
-   - Partitioning: date column
-
----
-
-## Connection 3: Telemetry Data
-
-Repeat for telemetry table:
-
-1. **Create Connection**: `hc_fct_telemetries_s3`
-   - Same IAM Role ARN
-   - Same External ID
-
-2. **Create Sink**:
-   - Source Table: `hc_fct_telemetries`
-   - Destination: `s3://your-bucket/telemetries/`
-   - Format: Parquet
-   - Partitioning: date column
-
----
-
-## Verification
-
-### Check Tableflow Status
-
-In Confluent UI, verify all 3 sinks show:
-- ✅ Status: **Running**
-- ✅ Data flow: Shows data being written
-- ✅ No errors in logs
-
-### Check S3 Data
-
-```bash
-# List files in S3
-aws s3 ls s3://${BUCKET}/anomalies/ --recursive
-aws s3 ls s3://${BUCKET}/prescription_changes/ --recursive
-aws s3 ls s3://${BUCKET}/telemetries/ --recursive
-
-# Expected structure (after a few minutes):
-# anomalies/date=2026-04-08/part-00000.parquet
-# prescription_changes/date=2026-04-08/part-00000.parquet
-# telemetries/date=2026-04-08/part-00000.parquet
-```
 
 ### Update Backend to Use S3
 
@@ -221,31 +165,3 @@ You should now see:
 2. Check AWS credentials are configured
 3. Ensure backend has S3 read access
 4. Restart backend: `docker compose restart backend`
-
----
-
-## Summary
-
-**Manual Steps Required**: 3 Tableflow connections
-
-Each connection takes ~2-3 minutes to create, total time: **10-15 minutes**
-
-**Why Manual?**
-- Confluent Terraform provider doesn't support Tableflow resources yet
-- This is the official recommended approach
-- Future versions may add Terraform support
-
-**What's Automated?**
-- ✅ S3 bucket creation
-- ✅ IAM role and permissions
-- ✅ Bucket configuration (encryption, versioning, lifecycle)
-
-**What's Manual?**
-- ⚙️ Creating Tableflow connections (3x)
-- ⚙️ Configuring sinks (3x)
-
----
-
-**Total Manual Effort**: ~15 minutes (one-time setup)
-
-Once configured, Tableflow runs automatically and continuously syncs data to S3!
