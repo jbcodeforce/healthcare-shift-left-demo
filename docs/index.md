@@ -50,6 +50,7 @@ Here is an example of the WebApp home pag, with e sidebar to navigate into the d
 * **Frontend (Vue.js)** — Control plane with navigation: Home, Patients, Devices, Prescriptions, Device telemetry, Demonstration. List views for patients, devices, and prescriptions (grouped by device); “New prescription” form with patient/device dropdowns and parameter rows; delete prescription per row; simulation control; live telemetry SSE stream.
 * **Kafka Connect + Debezium** — Connect runs in Docker Compose; Debezium PostgreSQL connector streams changes from the local `prescriptions` table to Confluent Cloud Kafka (Avro, Schema Registry). Topic prefix `healthcare` (e.g. `healthcare.public.prescriptions`). Register connector with `./connect/register-connector.sh`. The implementation adds a schema name stratefy to support different Schema Registry context.
 * **Pipelines** — Flink SQL DDL/DML for raw and RMD layers (e.g. raw_patients, raw_devices, raw_prescriptions, device_metrics). Deploy with shift-left tool to Confluent Cloud Flink.
+* **Kafka Consumer** for fact tables to report real-time dashboard back to the business intelligence dashboard 
 
 
 ## Use Cases
@@ -100,3 +101,4 @@ If we do an insulin pump, we can have Flink detecting a spike in BloodGlucose (T
 
 * [Confluent Cloud Flink product documentation](https://docs.confluent.io/cloud/current/flink/overview.html)
 * [Guide for Apache Flink and Confluent Flink products](https://jbcodeforce.github.io/flink-studies/)
+* [Shift left utils for preparing the Flink SQL project and manage it](https://jbcodeforce.github.io/shift_left_utils)

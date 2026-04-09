@@ -4,7 +4,7 @@ This guide explains how to enable Confluent Tableflow to write Flink analytics d
 
 ## 📊 Overview
 
-Tableflow connects Flink tables to object storage (S3) automatically, writing data as Parquet or Iceberg tables. This enables:
+Tableflow connects Flink tables to object storage (S3) automatically, writing data as Parquet file with Iceberg table metadata. This enables:
 
 - **Real-time analytics** - Query fresh data from S3 with DuckDB
 - **Historical analysis** - Access historical data without querying Kafka

@@ -35,11 +35,15 @@ CONFLUENT_CLOUD_API_SECRET=cflt....
 
 ## Infrastructure as Code
 
-If you do not have a Confluent Cloud Environment, a Kafka cluster, schema registry and Flink compute pools, you can use the Terraform in the IaC folder. You can also reuse existing resources. We will explain that in a sub section
+If you do not have a Confluent Cloud Environment, a Kafka cluster, schema registry and Flink compute pools, you can use the Terraform in the IaC folder. You can also reuse existing resources. See detail explanations in [IaC readme](https://github.com/jbcodeforce/healthcare-shift-left-demo/blob/main/IaC/README.md)
 
 * Followin classical steps for terraform:
 
 ```sh
+cd IaC
+# Configure
+cp terraform.tfvars.example terraform.tfvars
+vi terraform.tfvars
 terraform init
 terraform plan
 terraform apply --auto-approve
@@ -90,7 +94,9 @@ schema_registry_id = "lsrc-...."
 
 * modify the backend/.env with the created API KEYs and SECRETs
     ```sh
-    cd ./scripts
+    # Export to backend.. under IaC folder
+    terraform output -raw backend_env_snippet >> ../backend/.env
+    cd ../scripts
      ./update_backend_env_from_terraform.sh  
     ```
 
@@ -137,7 +143,64 @@ Access to the [demonstration web application](http://localhost:5173/)
 
 ![](./images/home_page.png)
 
+You can drive the demonstration from the user interface or via curl calls:
+
+```sh
+# Start simulation
+sleep 10
+curl -X POST http://localhost:8000/simulation/start \
+  -H "Content-Type: application/json" \
+  -d '{"simulation_type": "all"}'
+```
+
+
+### Start Device Simulation
+
+The simulation sends telemetry data to Kafka:
+
+```bash
+# Start simulation for all devices
+curl -X POST http://localhost:8000/simulation/start \
+  -H "Content-Type: application/json" \
+  -d '{"simulation_type": "all"}'
+
+# Check simulation status
+curl http://localhost:8000/simulation/status
+
+# Stop simulation
+curl -X POST http://localhost:8000/simulation/stop
+``` 
+
+### Verify
+
+```bash
+# Check status
+curl http://localhost:8000/health
+curl http://localhost:8000/simulation/status
+
+# Open browser
+open http://localhost:5173
+open http://localhost:5173/analytics
+```
+
+### URLs
+
+| Service | URL |
+|---------|-----|
+| **Frontend** | http://localhost:5173 |
+| **Backend API** | http://localhost:8000/docs |
+| **Analytics** | http://localhost:5173/analytics |
+| **Telemetry** | http://localhost:5173/telemetry |
+
+
 ## Deploy Flink Pipelines
+
+There are multiple ways to deploy flink statement:
+
+* [Terraform](#using-terraform) not recommended for production
+* Shift_left utils for bigger project using medaillon architecture, and best practices
+* [Dbt Confluent Adapter]
+* Confluent Cloud [REST api](#using-confluent-resp-api) with some custom python code
 
 ### Using Shift Left CLI
 
@@ -178,3 +241,86 @@ Access to the [demonstration web application](http://localhost:5173/)
 
 
 ### Using Terraform
+
+
+### Using confluent RESP API
+
+
+```
+cd pipelines/flink_pipelines
+python3 deploy_flink.py --all
+
+# Deploy specific layer
+python3 deploy_flink.py --layer raw
+```
+
+## Troubleshouting
+
+### Quick Diagnostics
+
+```bash
+# Check all services
+docker compose ps
+
+# Check environment
+env | grep -E "KAFKA|FLINK|SCHEMA"
+
+# Test API
+curl http://localhost:8000/health
+curl http://localhost:8000/analytics/dashboard | jq '.available'
+
+# Check data
+curl http://localhost:8000/telemetry/metrics | jq '. | length'
+```
+
+### Backend
+
+```bash
+# Restart backend
+docker compose restart backend
+
+# View logs
+docker compose logs -f backend
+
+# Stop simulation
+curl -X POST http://localhost:8000/simulation/stop
+```
+
+
+### "Terraform apply fails"
+```bash
+# Check credentials
+terraform validate
+cat terraform.tfvars
+```
+
+### "Docker won't start"
+```bash
+# Check ports
+lsof -i :8000
+lsof -i :5173
+docker compose down && docker compose up -d
+```
+
+
+### "No data in dashboard"
+```bash
+# Restart simulation
+curl -X POST http://localhost:8000/simulation/stop
+curl -X POST http://localhost:8000/simulation/start
+
+# Check logs
+docker compose logs backend
+```
+
+
+
+### "Flink deployment fails"
+```bash
+# Verify env vars
+source backend/.env
+env | grep FLINK
+
+# Check Flink compute pool
+confluent flink compute-pool list
+```

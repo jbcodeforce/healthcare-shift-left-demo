@@ -1,6 +1,6 @@
 # Healthcare Data Streaming Processing Demonstration
 
-Created 03/10/2026 - Updated 03/15/26
+Created 03/10/2026 - Updated 04/09/2026
 
 ## Goals
 
@@ -10,4 +10,4 @@ The approach is to use healthcare use case, like Patient records, health provide
 
 The audiance of this demonstration is data engineers to understand the art of feaseable. 
 
-[See the publish documentation](https://jbcodeforce.github.io/healthcare-shift-left-demo)
+[See the published documentation](https://jbcodeforce.github.io/healthcare-shift-left-demo)

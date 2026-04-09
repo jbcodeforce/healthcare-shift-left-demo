@@ -5,7 +5,7 @@ import time
 
 from backend.producer import init_producer, produce_device_metric
 from backend.schema import DeviceMetricsValue, normalize_device_metric
-from backend.simulation import emit_telemetry_record, get_story_time_ms
+from backend.simulation import emit_telemetry_record, get_last_snapshot_for_device, get_story_time_ms
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +13,16 @@ SOFTWARE_VERSION = "1.2.0"
 BASE_PRESSURE = 10.0
 BASE_FLOW_RATE = 2.5
 BASE_FLOW_LEVEL = 150.0  # telemetry FlowLevel range [0, 300]
+
+
+def _baseline_metrics(device_id: str) -> tuple[float, float, float]:
+    """Pressure, flow rate, flow level to hold when a scenario only varies one metric."""
+    snap = get_last_snapshot_for_device(device_id)
+    p = float(snap.get("Pressure", BASE_PRESSURE))
+    fr = float(snap.get("FlowRate", BASE_FLOW_RATE))
+    fl = float(snap.get("FlowLevel", BASE_FLOW_LEVEL))
+    fl = max(0.0, min(300.0, fl))
+    return p, fr, fl
 
 
 def _scenario_base_ts_ms() -> int:
@@ -66,48 +76,51 @@ def _emit_the_three_metrics(
 
 
 def run_flow_level_down(device_id: str) -> None:
-    """Produce a short sequence: flow_level to 0, pressure/flow at baseline or zero."""
+    """Produce a short sequence: flow_level ramps down to 0; pressure and flow rate stay steady."""
     patient_id = _patient_id_from_device(device_id)
     init_producer()
+    hold_p, hold_fr, _ = _baseline_metrics(device_id)
     base_ts = _scenario_base_ts_ms()
-    steps = [60, 50, 40, 30, 20, 15, 10, 0]
-    for i, pressure in enumerate(steps):
+    flow_level_steps = [60, 50, 40, 30, 20, 15, 10, 0]
+    for i, flow_level in enumerate(flow_level_steps):
         ts_ms = base_ts + i
         _emit_the_three_metrics(
-            device_id, patient_id, ts_ms, pressure, BASE_FLOW_RATE, BASE_FLOW_LEVEL
+            device_id, patient_id, ts_ms, hold_p, hold_fr, flow_level
         )
-        if i < len(steps) - 1:
+        if i < len(flow_level_steps) - 1:
             time.sleep(0.5)
     logger.info("Flow level down scenario sent for device %s", device_id)
 
 
 def run_pressure_oscillate(device_id: str) -> None:
-    """Produce a short sequence of Pressure up then down (e.g. 8 -> 12 -> 16 -> 12 -> 8)."""
+    """Vary pressure only; flow rate and flow level stay at the latest cached values (else baseline)."""
     patient_id = _patient_id_from_device(device_id)
     init_producer()
+    _, hold_fr, hold_fl = _baseline_metrics(device_id)
     base_ts = _scenario_base_ts_ms()
-    steps = [12.0, 16.0, 22.0, 21.0, 18.0, 15.0, 22.0, 19.0, 16.0, 13.0, 10.0]
-    for i, pressure in enumerate(steps):
+    pressure_steps = [12.0, 16.0, 22.0, 21.0, 18.0, 15.0, 22.0, 19.0, 16.0, 13.0, 10.0]
+    for i, pressure in enumerate(pressure_steps):
         ts_ms = base_ts + i
         _emit_the_three_metrics(
-            device_id, patient_id, ts_ms, pressure, BASE_FLOW_RATE, BASE_FLOW_LEVEL
+            device_id, patient_id, ts_ms, pressure, hold_fr, hold_fl
         )
-        if i < len(steps) - 1:
+        if i < len(pressure_steps) - 1:
             time.sleep(0.5)
     logger.info("Pressure oscillate scenario sent for device %s", device_id)
 
 
 def run_flow_rate_down(device_id: str) -> None:
-    """Produce a short sequence of FlowRate trending down (e.g. 2.5 -> 2.0 -> 1.0 -> 0.5)."""
+    """Vary flow rate only; pressure and flow level stay at the latest cached values (else baseline)."""
     patient_id = _patient_id_from_device(device_id)
     init_producer()
+    hold_p, _, hold_fl = _baseline_metrics(device_id)
     base_ts = _scenario_base_ts_ms()
-    steps = [2.5, 2.0, 1.0, 0.5, 0.0, 0.7, 1.4, 2.1, 1.3,1.0, 0.7, 0.4, 0.1]
-    for i, flow_rate in enumerate(steps):
+    flow_rate_steps = [2.5, 2.0, 1.0, 0.5, 0.0, 0.7, 1.4, 2.1, 1.3, 1.0, 0.7, 0.4, 0.1]
+    for i, flow_rate in enumerate(flow_rate_steps):
         ts_ms = base_ts + i
         _emit_the_three_metrics(
-            device_id, patient_id, ts_ms, BASE_PRESSURE, flow_rate, BASE_FLOW_LEVEL
+            device_id, patient_id, ts_ms, hold_p, flow_rate, hold_fl
         )
-        if i < len(steps) - 1:
+        if i < len(flow_rate_steps) - 1:
             time.sleep(0.5)
     logger.info("Flow rate down scenario sent for device %s", device_id)

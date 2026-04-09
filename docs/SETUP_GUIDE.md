@@ -1,53 +1,4 @@
 # Healthcare Shift-Left Demo - Setup Guide
-
-This guide will help you get the Healthcare Data Streaming Processing Demonstration up and running.
-
-## 📋 Prerequisites
-
-Before you begin, ensure you have the following installed:
-
-- **Docker** (version 20.10 or later)
-- **Docker Compose** (version 2.0 or later)
-
-To verify:
-```bash
-docker --version
-docker compose version
-```
-
-## 🚀 Quick Start (5 minutes)
-
-### Step 1: Extract the Project
-
-```bash
-# Extract the zip file
-unzip healthcare-shift-left-demo.zip
-cd healthcare-shift-left-demo
-```
-
-### Step 2: Start the Application
-
-```bash
-# Start all services
-docker compose up -d backend frontend postgres
-
-# Check that all services are running
-docker compose ps
-```
-
-You should see:
-- ✅ `backend` - Healthy
-- ✅ `frontend` - Running
-- ✅ `postgres` - Healthy
-
-### Step 3: Access the Application
-
-Open your browser and navigate to:
-
-- **Frontend Application**: http://localhost:5173
-- **Analytics Dashboard**: http://localhost:5173/analytics
-- **API Documentation**: http://localhost:8000/docs
-
 ## 🎯 What's Available
 
 ### 1. Analytics Dashboard (http://localhost:5173/analytics)
@@ -77,11 +28,6 @@ View and manage device prescriptions:
 
 **Data Source**: PostgreSQL database
 
-### 4. Patients & Devices
-
-- **Patients**: http://localhost:5173/patients
-- **Devices**: http://localhost:5173/devices
-
 ## 🔧 Configuration
 
 The application is pre-configured with:
@@ -95,22 +41,6 @@ All configuration is in `backend/.env`. The credentials are already set up.
 
 ## 🎮 Testing the Application
 
-### Start Device Simulation
-
-The simulation sends telemetry data to Kafka:
-
-```bash
-# Start simulation for all devices
-curl -X POST http://localhost:8000/simulation/start \
-  -H "Content-Type: application/json" \
-  -d '{"simulation_type": "all"}'
-
-# Check simulation status
-curl http://localhost:8000/simulation/status
-
-# Stop simulation
-curl -X POST http://localhost:8000/simulation/stop
-```
 
 ### Trigger Device Anomalies
 
@@ -286,16 +216,3 @@ After getting familiar with the demo:
 ✅ **Schema Registry** - Avro schema management  
 ✅ **DuckDB Analytics** - Query Parquet files from S3  
 ✅ **Vue.js Frontend** - Interactive dashboards with Chart.js  
-
-## 🆘 Need Help?
-
-- Check the logs: `docker compose logs -f`
-- Verify all services are healthy: `docker compose ps`
-- Review the configuration in `backend/.env`
-- Check the backend health endpoint: http://localhost:8000/health
-
----
-
-**Created**: 2026-04-03  
-**Version**: 1.0  
-**Contact**: Your colleague has provided a fully configured demo ready to run!

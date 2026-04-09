@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { Chart } from 'chart.js/auto'
 import 'chartjs-adapter-date-fns'
 import { getSimulationStatus, startSimulation, stopSimulation, subscribeTelemetryStream, getTelemetryMetrics, getDevices, triggerDeviceSimulation } from '../api/deviceGenerator.js'
@@ -16,6 +16,7 @@ const maxEvents = 100
 const streamPaused = ref(false)
 const streamActive = ref(false)
 const metricsRecords = ref([])
+const selectedChartDeviceIds = ref([])
 const pollIntervalMs = 2000
 let unsubscribeStream = null
 let pollTimer = null
@@ -64,7 +65,7 @@ function formatTsShort(ts) {
   return new Date(ms).toLocaleTimeString(undefined, { minute: '2-digit', second: '2-digit' })
 }
 
-/** Shared x-axis range so the three charts stay aligned; padding avoids edge clipping. */
+/** Shared x-axis range so the three charts stay aligned; light padding so series start near the left edge. */
 function xBoundsFromRecords(records) {
   let minT = Infinity
   let maxT = -Infinity
@@ -75,9 +76,10 @@ function xBoundsFromRecords(records) {
     maxT = Math.max(maxT, x)
   }
   if (!Number.isFinite(minT)) return null
-  const span = Math.max(maxT - minT, 90_000)
-  const padL = Math.max(span * 0.06, 120_000)
-  const padR = Math.max(span * 0.08, 180_000)
+  const rawSpan = maxT - minT
+  const span = rawSpan > 0 ? rawSpan : 10_000
+  const padL = Math.max(span * 0.04, 2_000)
+  const padR = Math.max(span * 0.06, 3_000)
   return { min: minT - padL, max: maxT + padR }
 }
 
@@ -125,7 +127,22 @@ function updateChart(chartInstance, records, metricName, yLabel, xBounds, yAxis 
     delete xScale.min
     delete xScale.max
   }
-  chartInstance.update()
+  chartInstance.update('none')
+}
+
+const filteredMetricsRecords = computed(() => {
+  if (!selectedChartDeviceIds.value.length) return metricsRecords.value
+  const selected = new Set(selectedChartDeviceIds.value)
+  return metricsRecords.value.filter((r) => selected.has(r.device_id))
+})
+
+function toggleChartDevice(deviceId, checked) {
+  const cur = selectedChartDeviceIds.value
+  if (checked) {
+    if (!cur.includes(deviceId)) selectedChartDeviceIds.value = [...cur, deviceId]
+  } else {
+    selectedChartDeviceIds.value = cur.filter((id) => id !== deviceId)
+  }
 }
 
 async function fetchMetrics() {
@@ -138,6 +155,7 @@ async function fetchMetrics() {
 }
 
 function startPolling() {
+  stopPolling()
   fetchMetrics()
   pollTimer = setInterval(fetchMetrics, pollIntervalMs)
 }
@@ -148,6 +166,14 @@ function stopPolling() {
     pollTimer = null
   }
 }
+
+watch(status, (s) => {
+  if (s === 'running') {
+    startPolling()
+  } else {
+    stopPolling()
+  }
+}, { immediate: true })
 
 function createChart(canvasEl, metricName, title, yLabel, yAxis = null) {
   if (!canvasEl) return null
@@ -163,7 +189,7 @@ function createChart(canvasEl, metricName, title, yLabel, yAxis = null) {
   return new Chart(ctx, {
     type: 'line',
     data: {
-      datasets: buildDatasetsForMetric(metricsRecords.value, metricName),
+      datasets: buildDatasetsForMetric(filteredMetricsRecords.value, metricName),
     },
     options: {
       responsive: true,
@@ -230,9 +256,8 @@ function initCharts() {
   )
 }
 
-watch(metricsRecords, (records) => {
-  if (!records.length) return
-  const bounds = xBoundsFromRecords(records)
+watch(filteredMetricsRecords, (records) => {
+  const bounds = records.length ? xBoundsFromRecords(records) : null
   updateChart(chartPressure, records, 'Pressure', 'Pressure', bounds)
   updateChart(chartFlowRate, records, 'FlowRate', 'Flow rate', bounds)
   updateChart(chartFlowLevel, records, 'FlowLevel', 'Flow level (0–300)', bounds, { min: 0, max: 300 })
@@ -321,7 +346,6 @@ onMounted(async () => {
   const { nextTick } = await import('vue')
   await nextTick()
   initCharts()
-  startPolling()
 })
 
 onUnmounted(() => {
@@ -389,19 +413,43 @@ onUnmounted(() => {
 
     <section class="charts-section">
       <h3>Simulated metrics sent to Kafka</h3>
-      <p class="muted">Last records from the simulator cache (one line per device). Polling every {{ pollIntervalMs / 1000 }}s.</p>
+      <p class="muted">
+        Last records from the simulator cache (one line per device).
+        While the simulation is running, charts refresh every {{ pollIntervalMs / 1000 }}s.
+      </p>
+      <div class="chart-filter">
+        <span class="chart-filter-label" id="chart-device-filter-label">Chart devices</span>
+        <ul
+          class="chart-device-list"
+          role="group"
+          aria-labelledby="chart-device-filter-label"
+        >
+          <li v-for="d in devices" :key="d.device_id" class="chart-device-row">
+            <label class="chart-device-item">
+              <input
+                type="checkbox"
+                :checked="selectedChartDeviceIds.includes(d.device_id)"
+                @change="toggleChartDevice(d.device_id, $event.target.checked)"
+              >
+              <span>{{ d.device_id }} ({{ d.patientId }})</span>
+            </label>
+          </li>
+        </ul>
+        <p v-if="!devices.length" class="muted chart-filter-help">No devices loaded yet.</p>
+        <p v-else class="muted chart-filter-help">No boxes checked = all devices.</p>
+      </div>
       <div class="charts-grid">
         <div class="chart-wrap">
           <canvas ref="canvasPressure" aria-label="Pressure chart"></canvas>
-          <p v-if="!metricsRecords.length" class="chart-placeholder">No data yet. Start the simulation to see metrics.</p>
+          <p v-if="!filteredMetricsRecords.length" class="chart-placeholder">No data for selected device(s). Start simulation or adjust filter.</p>
         </div>
         <div class="chart-wrap">
           <canvas ref="canvasFlowRate" aria-label="Flow rate chart"></canvas>
-          <p v-if="!metricsRecords.length" class="chart-placeholder">No data yet. Start the simulation to see metrics.</p>
+          <p v-if="!filteredMetricsRecords.length" class="chart-placeholder">No data for selected device(s). Start simulation or adjust filter.</p>
         </div>
         <div class="chart-wrap">
           <canvas ref="canvasFlowLevel" aria-label="Flow level chart"></canvas>
-          <p v-if="!metricsRecords.length" class="chart-placeholder">No data yet. Start the simulation to see metrics.</p>
+          <p v-if="!filteredMetricsRecords.length" class="chart-placeholder">No data for selected device(s). Start simulation or adjust filter.</p>
         </div>
       </div>
     </section>
@@ -501,13 +549,50 @@ button:disabled {
 button.active {
   background: var(--accent-bg);
   border-color: var(--accent-border);
-  color: var(--accent);
+  color: #fff;
 }
 .charts-grid {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   margin-top: 0.75rem;
+}
+.chart-filter {
+  margin-top: 0.75rem;
+}
+.chart-filter-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-h);
+}
+.chart-device-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.75rem;
+  max-height: 10rem;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+}
+.chart-device-row {
+  margin: 0.35rem 0;
+}
+.chart-device-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-h);
+  cursor: pointer;
+}
+.chart-device-item input {
+  flex-shrink: 0;
+}
+.chart-filter-help {
+  margin-top: 0.25rem;
+  margin-bottom: 0;
 }
 .chart-wrap {
   height: 220px;
@@ -575,6 +660,11 @@ button.active {
 }
 .scenario-buttons {
   margin-top: 0.25rem;
+}
+.scenario-buttons button:hover:not(:disabled),
+.scenario-buttons button:focus-visible:not(:disabled),
+.scenario-buttons button:active:not(:disabled) {
+  color: #fff;
 }
 .simulator-message {
   margin-top: 0.5rem;

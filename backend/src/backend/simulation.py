@@ -76,6 +76,37 @@ def get_cached_telemetry() -> list[dict[str, Any]]:
     return list(_telemetry_cache)
 
 
+def get_last_snapshot_for_device(device_id: str) -> dict[str, float]:
+    """Latest metric values for one device at the newest cached timestamp (one sim tick).
+
+    Used so one-shot scenarios can hold Pressure / FlowRate / FlowLevel steady at recent
+    values instead of resetting unrelated metrics to hardcoded baselines.
+    """
+    max_ts: Any = None
+    for rec in _telemetry_cache:
+        if rec.get("device_id") != device_id:
+            continue
+        ts = rec.get("ts")
+        if ts is None:
+            continue
+        if max_ts is None or ts > max_ts:
+            max_ts = ts
+    if max_ts is None:
+        return {}
+    out: dict[str, float] = {}
+    for rec in _telemetry_cache:
+        if rec.get("device_id") != device_id or rec.get("ts") != max_ts:
+            continue
+        name = rec.get("metric_name")
+        if name not in ("Pressure", "FlowRate", "FlowLevel"):
+            continue
+        try:
+            out[name] = float(rec["metric_value"])
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
 def _device_id(patient_id: str) -> str:
     return f"DEV-{patient_id}"
 
