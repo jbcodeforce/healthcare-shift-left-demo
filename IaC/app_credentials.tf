@@ -6,11 +6,14 @@ locals {
   use_existing_kafka_api_key   = var.kafka_api_key_id != null && var.kafka_api_key_id != ""
   use_existing_sr_api_key      = var.schema_registry_api_key_id != null && var.schema_registry_api_key_id != ""
   use_existing_flink_api_key   = var.flink_api_key_id != null && var.flink_api_key_id != ""
+  demo_service_account_display_name = (
+    var.service_account_display_name != null && trimspace(var.service_account_display_name) != ""
+  ) ? trimspace(var.service_account_display_name) : "${var.prefix}-demo-app"
 }
 
 resource "confluent_service_account" "demo_app" {
   count        = local.use_existing_service_account ? 0 : 1
-  display_name = "${var.prefix}-demo-app"
+  display_name = local.demo_service_account_display_name
   description  = "Healthcare demo: backend, Connect, and Flink statements"
 }
 

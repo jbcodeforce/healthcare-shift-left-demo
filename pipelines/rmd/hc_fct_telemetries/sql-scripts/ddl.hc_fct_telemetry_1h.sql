@@ -11,11 +11,9 @@ CREATE TABLE IF NOT EXISTS hc_fct_telemetry_1h (
   max_value      DOUBLE NOT NULL COMMENT 'Max metric value in window',
   count_reading  BIGINT NOT NULL COMMENT 'Number of readings in window',
   PRIMARY KEY (device_id, patient_id, metric_name, window_start) NOT ENFORCED
-) DISTRIBUTED BY HASH(device_id) INTO 1 BUCKETS
+) DISTRIBUTED BY HASH(device_id,  patient_id, metric_name, window_start) INTO 3 BUCKETS
 WITH (
   'changelog.mode' = 'upsert',
-  'key.avro-registry.schema-context' = '.flink-dev',
-  'value.avro-registry.schema-context' = '.flink-dev',
   'key.format' = 'avro-registry',
   'value.format' = 'avro-registry',
   'kafka.retention.time' = '0',

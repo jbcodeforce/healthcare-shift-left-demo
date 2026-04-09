@@ -9,7 +9,7 @@ data "confluent_schema_registry_cluster" "essentials" {
 
   depends_on = [
     confluent_kafka_cluster.kafka,
-    data.confluent_kafka_cluster.existing,
+    data.confluent_kafka_cluster.existing
   ]
 }
 
