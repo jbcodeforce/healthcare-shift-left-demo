@@ -1,6 +1,19 @@
-# Confluent Cloud Terraform (Environment, Kafka, Flink, Statements)
+# Confluent Cloud Terraform (Environment, Kafka, Flink, Keys)
 
-This folder contains Terraform definitions for the healthcare-shift-left-demo Confluent Cloud setup: **environment**, **Kafka cluster**, **Schema Registry** (Essentials, data source), **Flink compute pool**, **Terraform-managed API keys** for the demo app, and optional **Flink SQL statements**. You can either create all resources or attach to an existing environment and/or Kafka cluster using variables.
+Use **three separate Terraform root modules** (each has its own state file):
+
+| Stack | Path | Purpose |
+|-------|------|--------|
+| **Confluent core** | `IaC/` (this directory) | Environment, Kafka, Schema Registry (data), Flink pool, service account, API keys |
+| **Flink SQL statements** | `IaC/flink-statements/` | `confluent_flink_statement` resources from `../pipelines/inventory.json` |
+| **Tableflow (AWS)** | `IaC/aws/` | S3 bucket and IAM; Tableflow connections/sinks in the Confluent UI |
+
+**Apply order:** (1) `terraform apply` in `IaC/` (2) `IaC/flink-statements/` (reads `IaC/terraform.tfstate` by default via `terraform_remote_state`) (3) `IaC/aws/` (independent; can be before or after statements).
+
+**Migrating from a monolith state:** If an older state had Flink statements or S3 in `IaC/`, use `terraform state rm` (or destroy) for those resources before creating them in the new roots to avoid duplicate management.
+
+
+This `README` primarily documents the **Confluent core** in this folder. You can also create or attach to an environment and/or Kafka cluster using variables.
 
 ## Resources
 
@@ -11,26 +24,24 @@ This folder contains Terraform definitions for the healthcare-shift-left-demo Co
 | Service Account     | When `service_account_id` is not set  |
 | Flink Compute Pool  | When `flink_compute_pool_id` is not set |
 | Demo app API keys   | Always (Kafka, Schema Registry, Flink; see `app_credentials.tf`) |
-| Flink SQL Statements | When `deploy_flink_statements` is true  |
-| **Tableflow & S3**  | **When `enable_tableflow` is true (see [Tableflow Setup Guide](TABLEFLOW_SETUP_GUIDE.md))** |
 
-## File structure
+
+## File structure (this directory = Confluent core)
 
 ```
 ├── main.tf                    # Provider and data sources
 ├── variables.tf               # Variable definitions
-├── terraform.tfvars.example  # Example variable values
+├── terraform.tfvars.example  # Example for Confluent core only
 ├── env.tf                     # Environment (create or use existing)
 ├── kafka.tf                   # Kafka cluster (create or use existing)
 ├── schema_registry.tf         # Schema Registry data source
 ├── app_credentials.tf         # Service account, RBAC, Kafka/SR/Flink API keys
 ├── flink.tf                   # Flink compute pool
-├── flink-statements.tf        # Flink SQL statement deployment (DDL/DML)
-├── tableflow.tf               # Tableflow connections and S3 sinks (NEW!)
-├── outputs.tf                 # Output values
+├── outputs.tf                 # Output values (includes cloud_provider/region for flink-statements remote state)
 ├── README.md                  # This file
-├── TABLEFLOW_SETUP_GUIDE.md   # Tableflow setup documentation
-└── validate_tableflow.sh      # Validation script for Tableflow
+├── validate_tableflow.sh      # Runs against IaC/aws state
+├── aws/                       # Separate state: S3 and IAM for Tableflow
+└── flink-statements/          # Separate state: Flink SQL from pipelines/inventory.json
 ```
 
 ## Prerequisites
@@ -40,7 +51,7 @@ This folder contains Terraform definitions for the healthcare-shift-left-demo Co
 
 ## Credentials from `backend/.env`
 
-Reuse [`backend/.env`](../backend/.env) to supply **only** Terraform variables (`TF_VAR_*`) such as `confluent_cloud_api_key` / `confluent_cloud_api_secret`, `cloud_provider`, `environment_id`, etc. From the **repository root**:
+Reuse [`backend/.env`](../backend/.env) to supply **only** Terraform variables (`TF_VAR_*`) such as `confluent_cloud_api_key` / `confluent_cloud_api_secret`, `cloud_provider`, etc. From the **repository root**:
 
 ```sh
 source ./set_env_var && cd scripts && source ./export_terraform_env.sh
@@ -51,22 +62,20 @@ terraform plan
 
 [`export_terraform_env.sh`](../export_terraform_env.sh) maps `.env` names to Terraform inputs (see [`backend/.env.example`](../backend/.env.example)). It does **not** set removed variables for Flink keys; those come from Terraform outputs after apply.
 
-[`main.tf`](main.tf) sets Kafka, Schema Registry, Flink, and Tableflow provider arguments to empty strings so shell variables such as `FLINK_API_KEY` or `KAFKA_API_KEY` from `.env` do not partially configure the Confluent provider (“all or none” validation).
+[`main.tf`](main.tf) sets Kafka, Schema Registry, Flink arguments to empty strings so shell variables such as `FLINK_API_KEY` or `KAFKA_API_KEY` from `.env` do not partially configure the Confluent provider (“all or none” validation).
 
 ### Cloud API credentials for Terraform
 
-Do not commit `terraform.tfvars` (may contain secrets):
+Do not commit `terraform.tfvars` (may contain secrets). The scripts above should have set TF_VAR_*, if not you can manually do:
 
 ```sh
 export TF_VAR_confluent_cloud_api_key="<your-cloud-api-key>"
 export TF_VAR_confluent_cloud_api_secret="<your-cloud-api-secret>"
 ```
 
-Or copy `terraform.tfvars.example` to `terraform.tfvars` and set values there.
-
 ### After terraform  apply: backend Kafka / SR / Flink keys
 
-Terraform creates a **demo app service account** and **three API keys** (Kafka, Schema Registry, Flink). Key **secrets** are stored in Terraform state; treat state as confidential.
+Terraform creates a **demo app service account** and three API keys (Kafka, Schema Registry, Flink). Key secrets are stored in Terraform state; treat state as confidential.
 
 ```sh
 cd IaC
@@ -77,98 +86,53 @@ terraform output -json backend_env
 
 Individual outputs: `app_service_account_id`, `app_kafka_api_key_id`, `app_kafka_api_key_secret`, `app_schema_registry_api_key_id`, `app_schema_registry_api_key_secret`, `app_flink_api_key_id`, `app_flink_api_key_secret`.
 
-To **merge** the `backend_env` map into an existing [`backend/.env`](../backend/.env) (update only keys that differ or are missing; skip the write if nothing changed), from the repo root:
+To merge the `backend_env` map into an existing [`backend/.env`](../backend/.env) (update only keys that differ or are missing; skip the write if nothing changed), from the repo root:
 
 ```sh
 ./scripts/update_backend_env_from_terraform.sh
 # Preview: ./scripts/update_backend_env_from_terraform.sh --dry-run
 ```
 
-If an apply fails on **RBAC** (role or CRN), adjust `confluent_role_binding` resources in [`app_credentials.tf`](app_credentials.tf) per [Confluent predefined RBAC roles](https://docs.confluent.io/cloud/current/security/access-control/rbac/predefined-rbac-roles.html). **`DataSteward`** for Schema Registry must use the **environment** `resource_name` (`local.environment_resource_name`), not the Schema Registry cluster CRN—Confluent rejects `DataSteward` / `ResourceOwner` on `SchemaRegistry` cluster scope.
+If a `terraform apply` fails on **RBAC** (role or CRN), adjust `confluent_role_binding` resources in [`app_credentials.tf`](app_credentials.tf) per [Confluent predefined RBAC roles](https://docs.confluent.io/cloud/current/security/access-control/rbac/predefined-rbac-roles.html). `DataSteward` for Schema Registry must use the environment `resource_name` (`local.environment_resource_name`), not the Schema Registry cluster CRN—Confluent rejects `DataSteward` / `ResourceOwner` on `SchemaRegistry` cluster scope.
 
-## Create (provision all or attach to existing)
-
-From this directory:
-
-```sh
-terraform init
-terraform plan
-terraform apply
-```
-
-- **Default (no variables set):** Creates a new environment, Kafka cluster (standard, single zone), service account, Flink compute pool, and demo app API keys.
-- **Use existing environment:** Set `environment_id = "env-xxxxx"` in `terraform.tfvars` or via `-var`. Terraform will create the Kafka cluster (if not existing), service account, Flink pool, and keys in that environment.
-- **Use existing environment and Kafka:** Set both `environment_id` and `kafka_cluster_id`. Terraform will create the service account, Flink compute pool, and demo app keys. **When using `kafka_cluster_id`, `environment_id` must also be set** (the cluster belongs to that environment).
-- **Use existing service account:** Set `service_account_id = "sa-xxxxx"`. Terraform will use the existing service account and create API keys for it. The service account must already have the necessary RBAC permissions, or Terraform will attempt to add them.
-- **409 on create service account (name in use):** Either set `service_account_id` for the account that already owns that name, or set `service_account_display_name` to a unique name (defaults to `{prefix}-demo-app`).
-- **Use existing Flink compute pool:** Set `flink_compute_pool_id = "lfcp-xxxxx"` and `environment_id`. Terraform will use the existing Flink compute pool instead of creating a new one. If `terraform plan` / `destroy` fails with **403 Forbidden** on `data.confluent_flink_compute_pool.existing`, your Cloud API key cannot read Flink compute pools: use a key with **Organization Admin** / **FlinkAdmin** (environment scope), or set `flink_compute_pool_resource_name` to the pool’s CRN (from `terraform output` after a successful apply, or the Confluent Console) so Terraform skips that API read.
-- **Attach to fully existing infrastructure:** Set `environment_id`, `kafka_cluster_id`, `service_account_id`, and `flink_compute_pool_id` to use all existing resources. Terraform will only create API keys and optionally deploy Flink statements.
-
-Example with existing resources:
-
-```sh
-# Use existing environment and Kafka cluster only
-terraform apply -var='environment_id=env-xxxxx' -var='kafka_cluster_id=lkc-xxxxx'
-
-# Use all existing resources (SRE scenario)
-terraform apply \
-  -var='environment_id=env-xxxxx' \
-  -var='kafka_cluster_id=lkc-xxxxx' \
-  -var='service_account_id=sa-xxxxx' \
-  -var='flink_compute_pool_id=lfcp-xxxxx'
-```
 
 ## Clean (destroy managed resources)
+
+> **Why `destroy` didn’t delete my environment, Kafka cluster, or Flink pool**  
+> If `terraform.tfvars` sets `environment_id`, `kafka_cluster_id`, and/or `flink_compute_pool_id`, Terraform does not manage those objects—it only reads them. The Schema Registry cluster is a data source only. `terraform destroy` in this directory only removes what this state created (e.g. API keys, role bindings, created pool/cluster/env). Flink statements and S3/Tableflow IAM live in `../flink-statements` and `../aws`—destroy them separately from those directories. To remove the Confluent environment or cluster, use the [Confluent Cloud](https://confluent.cloud) UI/CLI, or use variables so Terraform created those resources in the first place.
 
 ```sh
 terraform destroy
 ```
 
-- If you **created** resources with this Terraform, they will be destroyed (environment, Kafka cluster, service account, Flink compute pool, API keys, and statements).
-- If you **used existing** resources (via variables), only resources this stack created are destroyed; existing resources are not removed.
+- If you created resources with this Terraform, they will be destroyed (environment, Kafka cluster, service account, Flink compute pool, API keys).
+- If you used existing resources (via variables), only resources this stack created are destroyed; existing resources are not removed.
   - Existing environment → not destroyed
   - Existing Kafka cluster → not destroyed
   - Existing service account → not destroyed (but role bindings created by Terraform will be removed)
   - Existing Flink compute pool → not destroyed
   - API keys → always destroyed (they were created by Terraform)
 
-## Flink Statement Deployment
+## Flink statement deployment (separate stack)
 
-This configuration can deploy Flink SQL statements from `../pipelines/inventory.json`. Statements use the **Terraform-managed** Flink API key and demo service account (`app_credentials.tf`).
+> **Not recommended for production**.
 
-### Deployment Phases
-
-Statements are deployed in dependency order:
-
-1. **Phase 1: Raw DDL** - Raw layer tables
-2. **Phase 2: RMD DDL** - RMD / dimension tables
-3. **Phase 3: Raw DML** - Raw layer transformations
-4. **Phase 4: RMD DML** - RMD layer transformations
-
-### Statement Properties
-
-- **DML properties files** (`.properties`): Loaded when present next to DML SQL.
-- **Base properties**: `sql.current-catalog` and `sql.current-database` use environment and Kafka cluster display names.
-
-### Managing Statements
-
-To skip statement deployment (infrastructure and keys only):
+Flink SQL is deployed from [`IaC/flink-statements/`](flink-statements) (own state), not this directory. It loads [`../pipelines/inventory.json`](../pipelines/inventory.json) and, by default, reads pool ID, service account, Flink key, and display names from `IaC/terraform.tfstate` via `terraform_remote_state` after the Confluent core has been applied.
 
 ```sh
-terraform apply -var='deploy_flink_statements=false'
+cd flink-statements
+cp terraform.tfvars.example terraform.tfvars
+# set confluent_cloud_api_key / confluent_cloud_api_secret
+terraform init
+terraform plan
+terraform apply
 ```
 
-To deploy only statements (after infrastructure exists):
+- **Phases:** Raw DDL → RMD DDL → raw DML → RMD DML, with `depends_on` and optional DML `.properties` files.
+- **Outputs** (`flink_statements_ddl_raw`, `flink_statements_dml_*`, …) are in the flink-statements state.
+- **Manual input instead of remote state:** set `use_confluent_remote_state = false` and set `environment_id`, `flink_api_key_id`, and other variables in `IaC/flink-statements/terraform.tfvars` (see example file there).
 
-```sh
-terraform apply -target=confluent_flink_statement.ddl_raw -target=confluent_flink_statement.ddl_rmd -target=confluent_flink_statement.dml_raw -target=confluent_flink_statement.dml_rmd
-```
-
-### Adding New Tables
-
-1. Add SQL under `pipelines/<layer>/<table>/sql-scripts/`
-2. Update `pipelines/inventory.json`
-3. Run `terraform apply`
+Troubleshooting: same as before (SQL, phase order, RBAC, [provider docs](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs/resources/confluent_flink_statement)).
 
 ## Outputs
 
@@ -179,10 +143,12 @@ terraform output
 Useful outputs:
 
 - Infrastructure: `env_id`, `kafka_cluster_id`, `kafka_bootstrap_endpoint`, `kafka_rest_endpoint`
+- `cloud_provider`, `cloud_region` (for `IaC/flink-statements` when using `terraform_remote_state`)
 - Schema Registry: `schema_registry_id`, `schema_registry_endpoint`
 - Flink: `flink_compute_pool_id`, `flink_rest_endpoint`
 - Demo credentials: `app_service_account_id`, `app_*_api_key_*`, `backend_env`, `backend_env_snippet` (sensitive)
-- Statements (when enabled): `flink_statements_ddl_raw`, `flink_statements_ddl_rmd`, `flink_statements_dml_raw`, `flink_statements_dml_rmd`
+- S3/Tableflow outputs: apply **`IaC/aws/`** and use outputs there (`s3_analytics_bucket`, `analytics_s3_paths`, `tableflow_iam_role_arn`, `tableflow_note`)
+- Flink statement output maps: in **`IaC/flink-statements/`** apply output
 
 ## Variables summary
 
@@ -200,68 +166,170 @@ Useful outputs:
 | `prefix`                     | No       | Prefix for resource names (default `health`) |
 | `flink_compute_pool_name`    | No       | Flink pool display name |
 | `flink_compute_pool_max_cfu` | No       | Max CFU for the pool (default `5`) |
-| `deploy_flink_statements`    | No       | Deploy Flink SQL statements (default `false`) |
-| `statement_name_prefix`      | No       | Prefix for statement names (default `hc`) |
-| **`enable_tableflow`**       | **No**   | **Enable Tableflow to write Flink data to S3 (default `false`)** |
-| **`confluent_external_id`**  | **No**   | **External ID for Tableflow IAM role (required when `enable_tableflow=true`)** |
-| **`confluent_aws_account_id`** | **No** | **Confluent AWS account ID for Tableflow (default `761327592718`)** |
 
-Kafka, Schema Registry, and Flink **application** API keys are not variables; they are created in [`app_credentials.tf`](app_credentials.tf) and exposed via outputs.
+Flink statement and Tableflow (AWS) variables are defined in `IaC/flink-statements/variables.tf` and `IaC/aws/variables.tf`.
 
-## Tableflow Setup (Issue #5)
+Kafka, Schema Registry, and Flink **application** API keys are not top-level “optional pass-through” in most cases; they are created in [`app_credentials.tf`](app_credentials.tf) and exposed via outputs.
 
-**Tableflow** writes Flink table data to S3 as Parquet or Iceberg tables, enabling real-time analytics from object storage.
+## Tableflow and S3 (stack `IaC/aws/`)
 
-### Quick Start
+**Tableflow** replicates data from Flink tables in Confluent Cloud to S3. **Terraform in [`IaC/aws/`](aws)** creates the **S3 bucket and IAM role/policy**; **Tableflow connections and sinks are created in the Confluent Cloud UI** (this repo does not manage them as `resource` blocks).
 
-1. **Prerequisites**: 
-   - Flink tables deployed and running
-   - AWS credentials configured
-   - Confluent External ID from Confluent support/UI
+```mermaid
+flowchart LR
+  FlinkTables[Flink_tables]
+  TableflowUI[Tableflow_sinks_Confluent_UI]
+  S3[S3_bucket_Terraform]
+  Analytics[Backend_DuckDB]
+  FlinkTables --> TableflowUI --> S3 --> Analytics
+```
 
-2. **Enable Tableflow**:
-   ```hcl
-   # In terraform.tfvars
-   enable_tableflow = true
-   confluent_external_id = "your-external-id-here"
-   ```
+Intended paths after you configure sinks (prefixes under the Terraform-managed bucket):
 
-3. **Deploy**:
-   ```bash
-   terraform init  # First time only (adds AWS provider)
-   terraform plan
-   terraform apply
-   ```
+| Flink table (source)   | S3 prefix (destination)   |
+|------------------------|----------------------------|
+| `hc_fct_dev_anomaly`   | `anomalies/`               |
+| `hc_fct_drift_evts`    | `prescription_changes/`    |
+| `hc_fct_telemetries`   | `telemetries/`             |
 
-4. **Verify**:
-   ```bash
-   ./validate_tableflow.sh
-   ```
+### What Terraform creates vs. what you configure in the UI
 
-### What Gets Created
+| Automated (Terraform) | Manual (Confluent UI) |
+|------------------------|------------------------|
+| S3 bucket, versioning, encryption, lifecycle | Tableflow **connections** to S3 (IAM role) |
+| IAM role trust to Confluent + S3 policy | Tableflow **sinks** from each fact table to bucket prefixes |
 
-When `enable_tableflow = true`:
-- ✅ S3 bucket for analytics data
-- ✅ IAM role with S3 access for Confluent
-- ✅ Tableflow connections (3)
-- ✅ Tableflow sinks (3) writing to:
-  - `s3://bucket/anomalies/` (from `hc_fct_dev_anomaly`)
-  - `s3://bucket/prescription_changes/` (from `hc_fct_drift_evts`)
-  - `s3://bucket/telemetries/` (from `hc_fct_telemetries`)
+### Prerequisites
 
-### Complete Guide
+- Flink fact tables deployed and running (e.g. apply `IaC/flink-statements/` and pipelines).
+- **AWS** permissions for S3 and IAM.
+- **Confluent Cloud** with Tableflow available for the environment.
+- **External ID** for cross-account IAM (from the Confluent UI: Environment → Settings → Tableflow, or Confluent Support).
 
-See **[TABLEFLOW_SETUP_GUIDE.md](TABLEFLOW_SETUP_GUIDE.md)** for:
-- Step-by-step setup instructions
-- Configuration details
-- Troubleshooting guide
-- Cost optimization tips
-- Maintenance procedures
+### 1. Configure Terraform (AWS stack)
 
-### Success Criteria (Issue #5)
+In [`IaC/aws/terraform.tfvars`](aws/terraform.tfvars) (or `-var`):
 
-- [x] S3 bucket created via Terraform
-- [x] IAM role and policy configured
-- [x] Tableflow enabled on all 3 fact tables
-- [ ] Data flowing to S3 (verify after deployment)
-- [ ] DuckDB can query S3 (test with analytics dashboard)
+```hcl
+enable_tableflow         = true
+confluent_external_id   = "your-external-id-from-confluent"
+confluent_aws_account_id = "761327592718"
+# Optional: confluent_environment_id = "env-xxxxx"  # S3 object tags only
+```
+
+Set **AWS credentials** for the account where the bucket and role are created, for example:
+
+```sh
+export AWS_PROFILE=your-profile
+# or
+export AWS_ACCESS_KEY_ID=...
+export AWS_SECRET_ACCESS_KEY=...
+export AWS_REGION=us-west-2
+```
+
+From `IaC/aws` (or `terraform -chdir=aws` from `IaC`):
+
+```sh
+cd aws
+terraform init
+terraform plan
+terraform apply
+```
+
+This creates the analytics bucket (name includes a random suffix), IAM role, and policy attachment. It does **not** create Confluent Tableflow connection or sink resources.
+
+### 2. Collect values for the Confluent UI
+
+```sh
+cd aws   # or: terraform -chdir=IaC/aws
+terraform output -raw s3_analytics_bucket
+terraform output -raw tableflow_iam_role_arn
+terraform output -json analytics_s3_paths
+```
+
+Keep `confluent_external_id` from your `IaC/aws/terraform.tfvars` at hand for the connection dialog.
+
+### 3. Create connections and sinks in the Confluent UI
+
+In [Confluent Cloud](https://confluent.cloud), select your environment → **Tableflow** → add a connection (Amazon S3, **IAM role** auth: paste the role ARN and External ID, then test).
+
+For **each** of the three fact tables, create a **sink** (you may use one connection for all three or separate connection names as you prefer):
+
+1. **Anomalies** — Source: catalog = environment id, database = Kafka cluster id, table = `hc_fct_dev_anomaly`. Destination: your bucket, prefix `anomalies`. Format: Parquet; partition by `date` (or your time column) as required by your table schema.
+2. **Prescription / drift** — Table `hc_fct_drift_evts` → prefix `prescription_changes/`.
+3. **Telemetries** — Table `hc_fct_telemetries` → prefix `telemetries/`.
+
+Wait until each sink shows **Running** in the UI. Expect roughly 10–15 minutes one-time if stepping through all dialogs.
+
+### 4. Point the backend at S3
+
+Merge bucket name into [`backend/.env`](../backend/.env) (see also [`../scripts/update_backend_env_from_terraform.sh`](../scripts/update_backend_env_from_terraform.sh) for other keys):
+
+```sh
+BUCKET_NAME=$(cd IaC/aws && terraform output -raw s3_analytics_bucket)
+# Append or set:
+# ANALYTICS_S3_BUCKET=<bucket>
+# ANALYTICS_S3_PREFIX=
+# AWS_REGION=<same as bucket>
+```
+
+Disable local-only sample paths if you used them:
+
+```sh
+# ANALYTICS_LOCAL_PATH=...
+```
+
+Restart the backend (e.g. `docker compose restart backend` or your `uvicorn` process).
+
+### 5. Verify
+
+```sh
+# From the IaC directory
+./validate_tableflow.sh
+```
+
+**S3 (after data has landed):**
+
+```sh
+aws s3 ls "s3://$(cd IaC/aws && terraform output -raw s3_analytics_bucket)/anomalies/" --recursive
+```
+
+**API:**
+
+```sh
+curl -s http://localhost:8000/analytics/dashboard | jq '.available'
+```
+
+### S3 and IAM details
+
+- **Bucket:** server-side encryption (AES256), versioning, lifecycle (see `IaC/aws/main.tf`).
+- **IAM trust:** the role allows `sts:AssumeRole` from Confluent’s AWS account subject to `sts:ExternalId` matching your `confluent_external_id`.
+- **Sink format:** Parquet and partitioning in the UI should match your Flink table columns (e.g. `date`).
+
+### Tableflow troubleshooting
+
+- **External ID / IAM** — `InvalidPermission` or connection test failure: confirm External ID with Confluent and that the role ARN in the UI matches `cd IaC/aws && terraform output -raw tableflow_iam_role_arn`.
+- **Sink failed / no S3 data** — Confirm Flink SQL is running and the chosen partition column exists; sink not paused; allow a few minutes after start.
+- **Backend analytics unavailable** — Check `ANALYTICS_S3_BUCKET`, AWS credentials for read access, and that objects exist under the expected prefixes.
+
+### Cost and retention
+
+- S3 standard storage and requests follow AWS pricing; Tableflow has Confluent usage charges (see current Confluent pricing).
+- Use lifecycle rules (already in Terraform) and query pruning by partition to limit scan size.
+
+### Disable or remove Tableflow infrastructure
+
+- In `IaC/aws`: set `enable_tableflow = false` and `terraform apply`, or `terraform destroy` in that directory. **S3 data may remain** if you do not remove the bucket.
+
+### Additional resources
+
+- [Confluent Tableflow documentation](https://docs.confluent.io/cloud/current/tableflow/)
+- [DuckDB S3 import](https://duckdb.org/docs/guides/import/s3_import.html)
+- [Terraform AWS provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
+
+### Success criteria (demo / Issue #5)
+
+- S3 bucket and IAM created via Terraform.
+- Three Tableflow sinks **Running** in the UI, writing to the three prefixes.
+- Objects appear under `anomalies/`, `prescription_changes/`, `telemetries/` after pipeline traffic.
+- Analytics API / dashboard can read from S3 (`./validate_tableflow.sh` and `curl` checks above).

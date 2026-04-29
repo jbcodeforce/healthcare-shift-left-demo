@@ -2,9 +2,9 @@
 
 ## Goals
 
-The scope of this repository is to build an end-to-end healthcare related demonstration, starting from Debezium CDC to Confluent Cloud Kafka, Flink SQL to process Raw->Bronze->Silver->Gold records, to sink s3 parquet/iceberg tables.
+The scope of this repository is to build an end-to-end Flink, Kafka, Lake house healthcare demonstration, starting from Debezium CDC to Confluent Cloud Kafka, Flink SQL to process Raw->Bronze->Silver->Gold records, to sink s3 parquet/iceberg tables.
 
-The approach is to use healthcare use case, like Patient records, health provider, prescriptions and device monitoring. The demonstration illustrates device monitoring and compliance to a doctor's prescription. With the basic domain model but representing good foundations to present different real-time processing use cases. We use Flink to compare Command/Intent (The Prescription) against Reality (The Telemetry). 
+The approach is to use healthcare use case, like Patient records, health providers, prescriptions and device monitoring. The demonstration illustrates device monitoring and compliance to a doctor's prescription. This is a basic domain model but representing enough foundations to present different real-time processing use cases. We use Flink to compare Command/Intent (The Prescription) against Reality (The Telemetry). 
 
 The audiance of this demonstration is data engineers to understand the art of feaseable. 
 
@@ -19,25 +19,33 @@ The audiance of this demonstration is data engineers to understand the art of fe
 
 ### Pipelines Architecture
 
-The figure below presents the production deployment of data streaming pipelines from processing raw data to silver or gold records. The pipeline processing is done using Confluent Cloud Flink SQL queries. 
+The figure below presents the production deployment of data streaming pipelines from processing raw data to silver and gold records. The pipeline processing is done using Confluent Cloud Flink SQL queries. 
 
 <figure markdown="span">
 ![](./images/pipeline-view.drawio.png)
 </figure>
 
-In this demonstration only Prescription entities are using CDC. The landign zone represents the raw data, while a first layer of Flink processing helps to prepare silver data, with deduplication, schema transformation and filtering.
+In this demonstration only Prescription entities are using CDC. The landing zone represents the raw data, while a first layer of Flink processing helps to prepare silver data, with deduplication, schema transformation and filtering.
 
-This diagram also presents a second layer of Flink statements to prepare facts and dimensions as data as a product.
+This diagram also presents a second layer of Flink statements to prepare facts and dimensions as data-as-a-product.
 
 ### Demonstration Components
 
-Applying this pipeline architecture to a deployment architecture, the Flink and Topics are running in Confluent Cloud. Sink tables used for Lake house platform are saved in parquet format, with Apache Iceberg metadata, in a Cloud Provider object storage layer.
+To support this demonstration, the following deployment architecture is defined: 
+
+* the Flink and Topics are running in Confluent Cloud. 
+* Sink tables used for Lake house platform are saved in parquet format, with Apache Iceberg metadata, in a Cloud Provider object storage layer.\\
+* A webApp supports the demonstration script and presents business intelligence dashboards
+* The backend support producing data to Kafka, writing to a Postgresql database, and exposing APIs for dashboards
+* Debezium CDC Kafka connector is deployed locally to upload change data capture on the Prescription tables to Kafka
+* Confluent Cloud Flink Compute pool is defined to run the Flink SQL statements
+
 <figure markdown="span">
 ![](./images/demo_components.drawio.png)
 </figure>
 The green components are for demonstration purpose and will run on your laptop.
 
-Here is an example of the WebApp home pag, with e sidebar to navigate into the demonstration steps:
+Here is an example of the WebApp home pag, with a sidebar to navigate into the demonstration steps:
 <figure markdown="span">
 ![](./images/home_page.png)
 </figure>
@@ -61,23 +69,23 @@ As part of moving from batch to real-time processing the following dimensions an
 
 | Dim/Fact | Explanation | Reference |
 |-------|-------------|-----------|
-| dim_patients | one row per patient (with device and current prescription-derived settings: pressure, flow rate, flow level | [dml.dim_patients.sql](https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/rmd/dim_patients/sql-scripts/dml.dim_patients.sql) | 
-| fact_drift_events | Assess devise metric vs prescription, one row per drift alert  | [dml.hc_fct_drift_evts.sql](https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/rmd/hc_fct_drift_evts/sql-scripts/dml.hc_fct_drift_evts.sql) |
-| Telemetry Facts | fact_telemetry_1h: windowed aggregates per device/patient/metric. fact_compliance_1h: in-range vs total readings (and optionally compliance_pct) per window. | [dml.hc_fct_telemetry_1h.sql](https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/rmd/hc_fct_telemetries/sql-scripts/dml.hc_fct_telemetry_1h.sql) |
-| Anomaly Detection | Fact table to compute anomaly on Pressure, FlowRate or FlowLevel | [hc_fct_dev_anomaly.sql](https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/rmd/hc_fct_dev_anomaly/sql-scripts/dml.hc_fct_dev_anomaly.sql) |
+| **dim_patients** | one row per patient (with device and current prescription-derived settings: pressure, flow rate, flow level | [dml.dim_patients.sql](https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/rmd/dim_patients/sql-scripts/dml.dim_patients.sql) | 
+| **fact_drift_events** | Assess devise metric vs prescription, one row per drift alert  | [dml.hc_fct_drift_evts.sql](https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/rmd/hc_fct_drift_evts/sql-scripts/dml.hc_fct_drift_evts.sql) |
+| **Telemetry Facts** | fact_telemetry_1h: windowed aggregates per device/patient/metric. fact_compliance_1h: in-range vs total readings (and optionally compliance_pct) per window. | [dml.hc_fct_telemetry_1h.sql](https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/rmd/hc_fct_telemetries/sql-scripts/dml.hc_fct_telemetry_1h.sql) |
+| **Anomaly Detection** | Fact table to compute anomaly on Pressure, FlowRate or FlowLevel | [hc_fct_dev_anomaly.sql](https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/rmd/hc_fct_dev_anomaly/sql-scripts/dml.hc_fct_dev_anomaly.sql) |
 
-To support the demonstration of how those facts are created, [see these explanations](./demonstration_script.md).
+To study how those facts are created, [see these explanations](./demonstration_script.md).
 
-#
+
 ### Compliance Alerting
 
 Use a join between the Prescription stream with the DeviceTelemetry stream to check for **Prescription Drift**.
-The prescriptions change rarely. If DeviceTelemetry.metricValue is outside the Prescription.targetValue +/- toleranceRange for more than $X$ minutes, trigger an alert.
-The Sink: Send the alert to a new Kafka topic: alerts.compliance.non-adherence.
+The prescriptions change rarely. If DeviceTelemetry.metricValue is outside the Prescription.targetValue +/- toleranceRange for more than X minutes, trigger an alert.
+The sink persits alerts in a new Kafka topic: `alerts.compliance.non-adherence`.
 
 ### Device's health
 
-With the Device telemetry page we can simulate Pressure, flowRate or flowlevel defect. Starting the simulation sends messages to the `hc_raw_device_metrics` topic, for all the 5 devices in the demonstration.
+With the Device telemetry web page, user can simulate Pressure, flowRate or flowlevel defect. Starting the simulation sends messages to the `hc_raw_device_metrics` topic, for all the 5 devices of the demonstration.
 
 <figure markdown="span">
 ![](./images/start_simul_metrics.png)
@@ -88,14 +96,13 @@ Once the simulation is running, the user can select one of the device and apply 
 An [anomaly detection](https://docs.confluent.io/cloud/current/ai/builtin-functions/detect-anomalies.html#ml-detect-anomalies) query can assess the three metrics and report potential issue.
 
 ### Other extensions
+
 Goal assess device reliability:
 
 * Windowed Aggregation: Calculate the average Pressure level or rate flow over a 1-hour tumbling window.
 * Pattern Recognition: If the Pressure increases by $>10% over three consecutive windows while FlowRate remains constant, the device may have a clogged filter.
 
 If we do an insulin pump, we can have Flink detecting a spike in BloodGlucose (Telemetry). Then checks the Prescription for the maximum allowable dose, to finally sends a command back to a Kafka topic `device.commands` to trigger an insulin bolus automatically.
-
-
 
 ## Resources
 

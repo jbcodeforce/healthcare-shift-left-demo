@@ -57,21 +57,7 @@ variable "flink_compute_pool_name" {
 variable "flink_compute_pool_max_cfu" {
   description = "Maximum CFU for the Flink compute pool"
   type        = number
-  default     = 5
-}
-
-# Flink statement deployment options
-
-variable "deploy_flink_statements" {
-  description = "Whether to deploy Flink SQL statements (DDL/DML)"
-  type        = bool
-  default     = false
-}
-
-variable "statement_name_prefix" {
-  description = "Prefix for Flink statement names"
-  type        = string
-  default     = "hc"
+  default     = 25
 }
 
 # Optional: use existing service account (skip creation when set)
@@ -151,23 +137,3 @@ variable "flink_api_key_secret" {
   sensitive   = true
 }
 
-# Tableflow and S3 configuration
-
-variable "enable_tableflow" {
-  description = "Enable Tableflow to write Flink data to S3 (requires AWS credentials)"
-  type        = bool
-  default     = false
-}
-
-variable "confluent_aws_account_id" {
-  description = "Confluent AWS account ID for Tableflow IAM role trust relationship"
-  type        = string
-  default     = "761327592718" # Confluent's AWS account ID for Tableflow
-}
-
-variable "confluent_external_id" {
-  description = "External ID for Confluent Tableflow IAM role assumption (provided by Confluent)"
-  type        = string
-  default     = ""
-  sensitive   = true
-}

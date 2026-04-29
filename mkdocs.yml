@@ -6,8 +6,8 @@ nav:
   - Introduction: index.md
   - Quick Start: quick_start.md
   - Demonstration Script: demonstration_script.md
-  - Development Instructions: 
-    - introduction: dev_instructions.md
+  - Developer Instructions: 
+    - Setup: dev_instructions.md
     - Table Flow setup: TABLEFLOW_SETUP_GUIDE.md
     - Dbt deployment: DBT_DEPLOYMENT_GUIDE.md
 theme:

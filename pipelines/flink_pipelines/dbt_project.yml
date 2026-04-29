@@ -21,7 +21,6 @@ clean-targets:
   - "logs"
 
 vars:
-  schema_context: '.flink-dev'
   kafka_retention_time: '0'
   kafka_compression_type: 'snappy'
 

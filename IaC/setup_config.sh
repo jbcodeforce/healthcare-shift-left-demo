@@ -240,32 +240,15 @@ cloud_region   = "$CLOUD_REGION"
 prefix         = "$PREFIX"
 
 # ============================================================================
-# Flink Configuration
+# Flink pool (this file is Confluent core only)
 # ============================================================================
 
 flink_compute_pool_name    = "healthcare-demo-pool"
 flink_compute_pool_max_cfu = 5
 
-# Deploy Flink statements via Python script (not Terraform)
-deploy_flink_statements = false
-statement_name_prefix   = "hc"
-
-# ============================================================================
-# Tableflow Configuration (Optional)
-# ============================================================================
-
-enable_tableflow = $ENABLE_TABLEFLOW
+# Flink SQL statements: configure ../flink-statements/terraform.tfvars (separate state)
+# Tableflow S3/IAM: configure ../aws/terraform.tfvars (separate state; set enable_tableflow, confluent_external_id)
 EOF
-
-if [ -n "$CONFLUENT_EXTERNAL_ID" ]; then
-    cat >> terraform.tfvars << EOF
-confluent_external_id = "$CONFLUENT_EXTERNAL_ID"
-EOF
-else
-    cat >> terraform.tfvars << EOF
-confluent_external_id = ""  # Add External ID here when ready
-EOF
-fi
 
 cat >> terraform.tfvars << EOF
 
@@ -287,14 +270,10 @@ EOF
 fi
 
 cat >> terraform.tfvars << EOF
-# Tableflow: $ENABLE_TABLEFLOW
-#
 # Next Steps:
 # 1. Review: cat terraform.tfvars
-# 2. Validate: terraform validate
-# 3. Plan: terraform plan
-# 4. Deploy: terraform apply
-#    OR: ../deploy.sh
+# 2. terraform init && terraform validate && terraform plan && terraform apply
+# 3. Optional: cd ../flink-statements and ../aws (see ../README.md)
 # ============================================================================
 EOF
 
@@ -312,11 +291,12 @@ else
     echo -e "${CYAN}Infrastructure:${NC} Will create new"
 fi
 
-echo -e "${CYAN}Tableflow:${NC} $ENABLE_TABLEFLOW"
-
 if [ "$ENABLE_TABLEFLOW" = "true" ] && [ -z "$CONFLUENT_EXTERNAL_ID" ]; then
+    echo -e "${CYAN}Tableflow (aws stack):${NC} enable in ../aws/terraform.tfvars with External ID"
     echo ""
-    print_warning "Don't forget to add External ID to terraform.tfvars!"
+    print_warning "Add Confluent External ID to ../aws/terraform.tfvars for IAM trust."
+else
+    echo -e "${CYAN}Tableflow (optional):${NC} ../aws/ — set enable_tableflow and External ID when ready"
 fi
 
 # Next steps

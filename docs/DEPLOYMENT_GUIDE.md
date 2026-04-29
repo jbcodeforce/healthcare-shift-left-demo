@@ -1,127 +1,4 @@
-# Healthcare Shift-Left Demo - Complete Deployment Guide
 
-**End-to-End Automated Deployment (Start to Finish)**
-
-This guide will take you from zero to a fully working healthcare data streaming demo with analytics dashboard.
-
-## 📋 Table of Contents
-
-1. [Prerequisites](#prerequisites)
-2. [Phase 1: Infrastructure Setup (Terraform)](#phase-1-infrastructure-setup-terraform)
-3. [Phase 2: Flink Pipelines Deployment](#phase-2-flink-pipelines-deployment)
-4. [Phase 3: Backend & Frontend (Docker)](#phase-3-backend--frontend-docker)
-5. [Phase 4: Tableflow Setup (Optional)](#phase-4-tableflow-setup-optional)
-6. [Phase 5: Verification & Testing](#phase-5-verification--testing)
-7. [Troubleshooting](#troubleshooting)
-
----
-
-## Prerequisites
-
-### Required Software
-
-- **Docker** (20.10+) and **Docker Compose** (2.0+)
-- **Terraform** (1.5+)
-- **Python** (3.10+)
-- **AWS CLI** (configured) - for Tableflow only
-- **Git**
-
-### Required Accounts
-
-- **Confluent Cloud** account with admin access
-- **AWS Account** (optional, for Tableflow S3 storage)
-
-### Required Information
-
-Before starting, collect these:
-- ✅ Confluent Cloud API Key & Secret
-- ✅ Existing Environment ID (or create new)
-- ✅ Existing Kafka Cluster ID (or create new)
-- ✅ AWS credentials (for Tableflow)
-
----
-
-## Phase 1: Infrastructure Setup (Terraform)
-
-**Duration**: 10-15 minutes  
-**What it creates**: Confluent Cloud infrastructure
-
-### Step 1.1: Clone Repository
-
-```bash
-# Clone the repo
-git clone https://github.com/jbcodeforce/healthcare-shift-left-demo.git
-cd healthcare-shift-left-demo
-```
-
-### Step 1.2: Configure Terraform Variables
-
-```bash
-cd IaC
-
-# Create terraform.tfvars from example
-cp terraform.tfvars.example terraform.tfvars
-
-# Edit with your values
-nano terraform.tfvars
-```
-
-**Minimal configuration** (using existing infrastructure):
-```hcl
-# Confluent Cloud API credentials
-confluent_cloud_api_key    = "YOUR_CLOUD_API_KEY"
-confluent_cloud_api_secret = "YOUR_CLOUD_API_SECRET"
-
-# Use existing infrastructure
-environment_id   = "env-xxxxx"   # Your environment ID
-kafka_cluster_id = "lkc-xxxxx"   # Your Kafka cluster ID
-
-# Optional: Use existing service account
-service_account_id = "sa-xxxxx"  # If you have one
-
-# Optional: Use existing API keys
-kafka_api_key_id     = "YOUR_KAFKA_KEY"
-kafka_api_key_secret = "YOUR_KAFKA_SECRET"
-
-# Cloud configuration
-cloud_provider = "AWS"
-cloud_region   = "us-east-2"  # Must match your Kafka cluster region
-
-# Flink configuration
-flink_compute_pool_name    = "healthcare-demo-pool"
-flink_compute_pool_max_cfu = 5
-
-# DON'T deploy Flink statements yet (we'll do this in Phase 2)
-deploy_flink_statements = false
-
-# Tableflow (optional - can enable later)
-enable_tableflow = false
-```
-
-### Step 1.3: Deploy Infrastructure
-
-```bash
-# Initialize Terraform (first time only)
-terraform init
-
-# Preview changes
-terraform plan
-
-# Deploy infrastructure
-terraform apply
-# Type 'yes' when prompted
-```
-
-**Expected output:**
-```
-Apply complete! Resources: X added, 0 changed, 0 destroyed.
-
-Outputs:
-env_id = "env-xxxxx"
-kafka_cluster_id = "lkc-xxxxx"
-flink_compute_pool_id = "lfcp-xxxxx"
-...
-```
 
 ### Step 1.4: Export Credentials to Backend
 
@@ -332,17 +209,12 @@ This phase is **optional** but recommended for production use. It enables writin
 **Option B: Contact Confluent Support**
 - Request the External ID for your organization
 
-### Step 4.2: Enable Tableflow in Terraform
+### Step 4.2: Enable Tableflow in Terraform (AWS stack)
 
 ```bash
-cd IaC
-
-# Edit terraform.tfvars
-nano terraform.tfvars
-
-# Add these lines:
-enable_tableflow = true
-confluent_external_id = "your-external-id-from-step-4.1"
+cd IaC/aws
+cp terraform.tfvars.example terraform.tfvars
+# Edit: enable_tableflow = true, confluent_external_id = "your-external-id-from-step-4.1"
 ```
 
 ### Step 4.3: Deploy S3 Infrastructure
@@ -351,7 +223,8 @@ confluent_external_id = "your-external-id-from-step-4.1"
 # AWS credentials should be configured
 aws sts get-caller-identity
 
-# Deploy Tableflow infrastructure
+cd IaC/aws
+terraform init
 terraform apply
 # Type 'yes' when prompted
 ```
@@ -364,6 +237,7 @@ terraform apply
 ### Step 4.4: Get S3 Configuration
 
 ```bash
+cd IaC/aws
 # Get bucket name
 export BUCKET=$(terraform output -raw s3_analytics_bucket)
 echo "S3 Bucket: $BUCKET"
@@ -414,7 +288,7 @@ Repeat for telemetry:
 - **Destination**: `s3://$BUCKET/telemetries/`
 - Same format settings
 
-**See detailed steps**: `IaC/MANUAL_TABLEFLOW_STEPS.md`
+**See detailed steps**: [IaC/README.md](IaC/README.md#tableflow-and-s3) (section **Tableflow and S3**)
 
 ### Step 4.6: Verify Data Flow to S3
 
@@ -697,7 +571,7 @@ docker compose logs backend | grep -i kafka
 
 - **Full Documentation**: https://jbcodeforce.github.io/healthcare-shift-left-demo
 - **Terraform Guide**: `IaC/README.md`
-- **Tableflow Setup**: `IaC/TABLEFLOW_SETUP_GUIDE.md`
+- **Tableflow setup**: [IaC/README.md](IaC/README.md#tableflow-and-s3) (section **Tableflow and S3**)
 - **dbt Deployment**: `pipelines/DBT_DEPLOYMENT_GUIDE.md`
 - **API Documentation**: http://localhost:8000/docs (when running)
 

@@ -1,0 +1,13 @@
+# Copy to terraform.tfvars and set values. Do not commit secrets.
+# Run from this directory: terraform init && terraform plan
+
+cloud_region   = "us-west-2"
+prefix         = "health"
+enable_tableflow = true
+
+# Optional: tag the bucket (for operators)
+# confluent_environment_id = "env-xxxxx"
+
+# From Confluent: Environment -> Settings -> Tableflow (or support)
+confluent_external_id   = "your-external-id"
+confluent_aws_account_id = "761327592718"

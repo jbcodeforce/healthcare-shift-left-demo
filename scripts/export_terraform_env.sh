@@ -27,18 +27,10 @@ _env_id="${ENVIRONMENT_ID:-}"
 
 [[ -n "${KAFKA_CLUSTER_ID:-}" ]] && export TF_VAR_kafka_cluster_id="$KAFKA_CLUSTER_ID"
 
-# Kafka / Schema Registry / Flink API keys are created by Terraform (app_credentials.tf).
-# After apply, use: cd IaC && terraform output -raw backend_env_snippet
-# Do not map FLINK_* or PRINCIPAL_ID to TF_VAR_* (those variables were removed).
+# Kafka / Schema Registry / Flink API keys are created by Terraform in IaC/ (app_credentials.tf).
+# After apply: cd IaC && terraform output -raw backend_env_snippet
+# Flink statement deployment is a separate root: IaC/flink-statements/ (own variables, not these TF_VAR_).
+# Tableflow S3/IAM: IaC/aws/
 
 [[ -n "${PREFIX:-}" ]] && export TF_VAR_prefix="$PREFIX"
 [[ -n "${FLINK_COMPUTE_POOL_NAME:-}" ]] && export TF_VAR_flink_compute_pool_name="$FLINK_COMPUTE_POOL_NAME"
-[[ -n "${STATEMENT_NAME_PREFIX:-}" ]] && export TF_VAR_statement_name_prefix="$STATEMENT_NAME_PREFIX"
-
-if [[ -n "${DEPLOY_FLINK_STATEMENTS:-}" ]]; then
-  _dfs=$(printf '%s' "$DEPLOY_FLINK_STATEMENTS" | tr '[:upper:]' '[:lower:]')
-  case "$_dfs" in
-    true | 1 | yes) export TF_VAR_deploy_flink_statements=true ;;
-    false | 0 | no) export TF_VAR_deploy_flink_statements=false ;;
-  esac
-fi

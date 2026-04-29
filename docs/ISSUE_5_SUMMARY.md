@@ -6,7 +6,7 @@ All Terraform infrastructure code is in place. The setup is ready to be deployed
 
 ## 📦 What Was Implemented
 
-### 1. Terraform Infrastructure (`IaC/tableflow.tf`)
+### 1. Terraform Infrastructure (`IaC/aws/` — S3 and IAM; formerly `IaC/tableflow.tf`)
 
 Created comprehensive Terraform configuration including:
 
@@ -61,14 +61,10 @@ Added outputs for:
 
 ### 4. Documentation
 
-#### `IaC/TABLEFLOW_SETUP_GUIDE.md` (Comprehensive Guide)
-- Architecture overview
-- Prerequisites checklist
-- Step-by-step setup (8 steps)
-- Configuration details
-- Troubleshooting section
-- Cost optimization tips
-- Maintenance procedures
+#### `IaC/README.md` (section **Tableflow and S3**)
+- Architecture, prerequisites, Terraform vs Confluent UI steps
+- Configuration, troubleshooting, cost, maintenance
+- (Former standalone guides were merged here.)
 
 #### `IaC/validate_tableflow.sh` (Validation Script)
 Automated checks for:
@@ -248,9 +244,9 @@ s3://health-healthcare-analytics-xxxxx/
 
 ## 📚 Reference
 
-- **Setup Guide**: `IaC/TABLEFLOW_SETUP_GUIDE.md`
+- **Setup guide**: `IaC/README.md` (section **Tableflow and S3**)
 - **Validation Script**: `IaC/validate_tableflow.sh`
-- **Terraform Code**: `IaC/tableflow.tf`
+- **Terraform code**: `IaC/aws/`
 - **Variables**: `IaC/variables.tf`
 - **Outputs**: `IaC/outputs.tf`
 

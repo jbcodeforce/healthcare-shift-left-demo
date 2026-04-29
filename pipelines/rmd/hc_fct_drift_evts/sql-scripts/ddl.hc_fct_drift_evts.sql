@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS hc_fct_drift_evts (
 ) DISTRIBUTED BY HASH(patient_id, device_id, metric_name) INTO 1 BUCKETS
 WITH (
   'changelog.mode' = 'upsert',
-  'key.format' = 'avro-registry',
+  'key.format' = 'json-registry',
   'value.format' = 'avro-registry',
   'kafka.retention.time' = '0',
   'kafka.producer.compression.type' = 'snappy',

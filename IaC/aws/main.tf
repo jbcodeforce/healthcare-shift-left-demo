@@ -1,15 +1,27 @@
-# Tableflow and S3 configuration for fact tables
-# NOTE: Tableflow connections must be created via Confluent UI
-# This file creates S3 bucket and IAM role only
+# S3 and IAM for Confluent Tableflow (analytics data).
+# Tableflow connections/sinks are configured in the Confluent Cloud UI; see parent IaC/README.md.
 
-# AWS Provider for S3 and IAM resources
-# (AWS provider is declared in main.tf required_providers)
+terraform {
+  required_version = ">= 1.0"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
+  }
+}
+
 provider "aws" {
   region = var.cloud_region
 }
 
 # ------------------------------------------------------
-# S3 Bucket for Analytics Data
+# S3 bucket for analytics data
 # ------------------------------------------------------
 
 resource "aws_s3_bucket" "analytics" {
@@ -18,7 +30,7 @@ resource "aws_s3_bucket" "analytics" {
 
   tags = {
     Name        = "Healthcare Analytics Data"
-    Environment = local.environment_id
+    Environment = var.confluent_environment_id != "" ? var.confluent_environment_id : "n/a"
     ManagedBy   = "Terraform"
     Project     = "healthcare-shift-left-demo"
   }
@@ -32,6 +44,7 @@ resource "random_id" "bucket_suffix" {
 resource "aws_s3_bucket_versioning" "analytics" {
   count  = var.enable_tableflow ? 1 : 0
   bucket = aws_s3_bucket.analytics[0].id
+
   versioning_configuration {
     status = "Enabled"
   }
@@ -48,7 +61,6 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "analytics" {
   }
 }
 
-# Lifecycle policy to manage old data
 resource "aws_s3_bucket_lifecycle_configuration" "analytics" {
   count  = var.enable_tableflow ? 1 : 0
   bucket = aws_s3_bucket.analytics[0].id
@@ -57,7 +69,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "analytics" {
     id     = "expire-old-data"
     status = "Enabled"
 
-    filter {}  # Apply to all objects
+    filter {}
 
     expiration {
       days = 90
@@ -70,10 +82,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "analytics" {
 }
 
 # ------------------------------------------------------
-# IAM Role and Policy for Confluent Tableflow
+# IAM role and policy for Confluent Tableflow
 # ------------------------------------------------------
 
-# IAM role that Confluent Tableflow will assume
 resource "aws_iam_role" "tableflow" {
   count = var.enable_tableflow ? 1 : 0
   name  = "${var.prefix}-tableflow-role"
@@ -103,7 +114,6 @@ resource "aws_iam_role" "tableflow" {
   }
 }
 
-# IAM policy for S3 access
 resource "aws_iam_policy" "tableflow_s3" {
   count       = var.enable_tableflow ? 1 : 0
   name        = "${var.prefix}-tableflow-s3-policy"
@@ -126,17 +136,14 @@ resource "aws_iam_policy" "tableflow_s3" {
         ]
       },
       {
-        Effect = "Allow"
-        Action = [
-          "s3:ListAllMyBuckets"
-        ]
+        Effect   = "Allow"
+        Action   = ["s3:ListAllMyBuckets"]
         Resource = "*"
       }
     ]
   })
 }
 
-# Attach policy to role
 resource "aws_iam_role_policy_attachment" "tableflow_s3" {
   count      = var.enable_tableflow ? 1 : 0
   role       = aws_iam_role.tableflow[0].name

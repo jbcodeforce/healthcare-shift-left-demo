@@ -363,7 +363,7 @@ echo "  1. Open http://localhost:5173 in your browser"
 echo "  2. Explore the analytics dashboard"
 echo "  3. View real-time telemetry"
 echo "  4. (Optional) Set up Tableflow for S3 analytics"
-echo "     See: IaC/TABLEFLOW_SETUP_GUIDE.md"
+echo "     See: IaC/README.md (section Tableflow and S3)"
 echo ""
 
 print_success "Healthcare Shift-Left Demo is ready!"

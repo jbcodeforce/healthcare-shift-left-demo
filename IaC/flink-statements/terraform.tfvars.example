@@ -1,0 +1,24 @@
+# Copy to terraform.tfvars. From this directory: terraform init && terraform plan
+#
+# Default: read Confluent resource IDs and Flink API keys from ../terraform.tfstate
+# (apply the Confluent core stack in the parent IaC/ directory first).
+
+confluent_cloud_api_key    = "YOUR_CLOUD_API_KEY"
+confluent_cloud_api_secret = "YOUR_CLOUD_API_SECRET"
+
+use_confluent_remote_state = true
+# confluent_terraform_state_path = "/abs/path/to/terraform.tfstate"  # optional; defaults to ../terraform.tfstate
+
+deploy_flink_statements = true
+statement_name_prefix  = "hc"
+
+# If use_confluent_remote_state = false, set the following (and keep cloud/region in sync with your cluster):
+# cloud_provider  = "AWS"
+# cloud_region     = "us-west-2"
+# environment_id   = "env-xxxxx"
+# env_display_name = "my-env"
+# kafka_cluster_display_name = "cluster-display-name"
+# flink_compute_pool_id = "lfcp-xxxxx"
+# service_account_id   = "sa-xxxxx"
+# flink_api_key_id     = "xxxxx"
+# flink_api_key_secret = "xxxxx"

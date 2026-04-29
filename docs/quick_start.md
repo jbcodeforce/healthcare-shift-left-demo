@@ -1,75 +1,85 @@
 # Quick Start for the demonstration
 
 
-For developers [see the specific instructions](./dev_instructions.md) for running locally, with code structure and implementation approach descriptions.
+For this demonstration developers [see the specific instructions](./dev_instructions.md) to run all components locally. For persons willing to just run the demonstration from docker and Confluent Cloud follow the following instructions:
 
 
 ## Prerequisites
 
-* Get docker cli and docker compose, with access to public docker hub. The images are:
-    * [jbcodeforce/healthcare-shift-left-demo-backend](https://hub.docker.com/repository/docker/jbcodeforce/healthcare-shift-left-demo-backend
+* Get docker cli and docker compose, with access to public docker hub. The docker images are public:
+    * [jbcodeforce/healthcare-shift-left-demo-backend](https://hub.docker.com/repository/docker/jbcodeforce/healthcare-shift-left-demo-backend)
     * [jbcodeforce/healthcare-shift-left-demo-frontend](https://hub.docker.com/repository/docker/jbcodeforce/healthcare-shift-left-demo-frontend)
     * [jbcodeforce/healthcare-shift-left-demo-kafka-connect](https://hub.docker.com/repository/docker/jbcodeforce/healthcare-shift-left-demo-kafka-connect)
-* [Optional] get [terraform cli](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli) (if you want to define infrastructure like Kafka Cluster, Flink Compute pool and deploy Flink statements)
-* [Optional] get [shift_left utilities](https://jbcodeforce.github.io/shift_left_utils/) if you want to use a dbt like CLI to manage Flink project at scale
+* [Optional] get [terraform cli](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli) (if you want to define Confluent Cloud infrastructure like the Kafka Cluster, Flink Compute pool, service account, APIs)
+* [Optional] get [shift_left utilities](https://jbcodeforce.github.io/shift_left_utils/) if you want to use a custom CLI to manage Flink project at scale.
 
 ## Gather API Keys
 
-At the minimum you need to get the API KEY and SECRETS for the user that will run the terraform, or the confluent CLI, or the shift_left CLI.
+* Get Organization ID, CONFLUENT_CLOUD_API_KEY, CONFLUENT_CLOUD_API_SECRET, Cloud provider, and region. 
+* The backend uses one file for environment variables: the `./backend/.env`.
+    ```sh
+    cp ./backend/.env.example ./backend/.env
+    ```
 
-The backend uses one file for environment variables: the `./backend/.env`.
+    Modify the top section of the file if you will create the environment, kafka cluster, schema registry and Flink Compute pool with Terraform.
 
-```sh
-cp ./backend/.env.example ./backend/.env
-```
-
-Modify the top section of the file if you will create the environment, kafka cluster, schema registry and Flink Compute pool with Terraform.
-
-```sh
-CLOUD_PROVIDER="aws"
-CLOUD_REGION="us-west-2"
-ORG_ID="...."
-CONFLUENT_CLOUD_API_KEY=....
-CONFLUENT_CLOUD_API_SECRET=cflt....
-```
+    ```sh
+    CLOUD_PROVIDER="aws"
+    CLOUD_REGION="us-west-2"
+    ORG_ID="...."
+    CONFLUENT_CLOUD_API_KEY=....
+    CONFLUENT_CLOUD_API_SECRET=cflt....
+    ```
 
 ## Infrastructure as Code
 
-If you do not have a Confluent Cloud Environment, a Kafka cluster, schema registry and Flink compute pools, you can use the Terraform in the IaC folder. You can also reuse existing resources. See detail explanations in [IaC readme](https://github.com/jbcodeforce/healthcare-shift-left-demo/blob/main/IaC/README.md)
+If you do not have a Confluent Cloud Environment, a Kafka cluster, a schema registry and Flink compute pools, you can use the Terraform in the IaC folder. 
 
-* Followin classical steps for terraform:
-
-```sh
-cd IaC
-# Configure
-cp terraform.tfvars.example terraform.tfvars
-vi terraform.tfvars
-terraform init
-terraform plan
-terraform apply --auto-approve
-```
-
-The outputs should look like:
-
-```sh
-env_display_name = "health-env"
-env_id = "env-r..."
-flink_compute_pool_id = "lfcp-9....m"
-flink_rest_endpoint = "https://flink.us-west-2.aws.confluent.cloud"
-flink_statements_ddl_raw = {}
-flink_statements_ddl_rmd = {}
-flink_statements_dml_raw = {}
-flink_statements_dml_rmd = {}
-kafka_bootstrap_endpoint = "SASL_SSL://pkc-......us-west-2.aws.confluent.cloud:9092"
-kafka_cluster_display_name = "health-kafka"
-kafka_cluster_id = "lkc-...."
-kafka_rest_endpoint = "https://pkc-.....us-west-2.aws.confluent.cloud:443"
-schema_registry_endpoint = "https://psrc-......us-west-2.aws.confluent.cloud"
-schema_registry_id = "lsrc-...."
-```
+You can also reuse existing resources. See detail explanations in [IaC readme](https://github.com/jbcodeforce/healthcare-shift-left-demo/blob/main/IaC/README.md)
 
 
-* Adding a command to get environment variables (to see them)
+* New infrastructure deployment with Terraform:
+    ```sh
+    cd IaC
+    # Configure
+    cp terraform.tfvars.example terraform.tfvars
+    # Modify 
+    vi terraform.tfvars
+    terraform init
+    terraform plan
+    terraform apply --auto-approve
+    ```
+
+    The outputs should look like:
+
+    ```sh
+    app_flink_api_key_id = <sensitive>
+    app_flink_api_key_secret = <sensitive>
+    app_kafka_api_key_id = <sensitive>
+    app_kafka_api_key_secret = <sensitive>
+    app_schema_registry_api_key_id = <sensitive>
+    app_schema_registry_api_key_secret = <sensitive>
+    app_service_account_id = "sa-v7gw6p0"
+    backend_env = <sensitive>
+    backend_env_snippet = <sensitive>
+    cloud_provider = "AWS"
+    cloud_region = "us-west-2"
+    env_display_name = "health-env"
+    env_id = "env-ywqmyk"
+    flink_compute_pool_id = "lfcp-wvkx7m"
+    flink_compute_pool_resource_name = "crn://confluent.cloud/organization=49cee212-6346-438a-a1fa-d1b1cbd90d44/environment=env-ywqmyk/flink-region=aws.us-west-2/compute-pool=lfcp-wvkx7m"
+    flink_rest_endpoint = "https://flink.us-west-2.aws.confluent.cloud"
+    kafka_bootstrap_endpoint = "SASL_SSL://pkc-n98pk.us-west-2.aws.confluent.cloud:9092"
+    kafka_cluster_display_name = "health-kafka"
+    kafka_cluster_id = "lkc-kpwy8m"
+    kafka_rest_endpoint = "https://pkc-n98pk.us-west-2.aws.confluent.cloud:443"
+    schema_registry_endpoint = "https://psrc-1ryeo07.us-west-2.aws.confluent.cloud"
+    schema_registry_id = "lsrc-50yv72"
+    schema_registry_rest_endpoint = "https://psrc-1ryeo07.us-west-2.aws.confluent.cloud"
+    ```
+
+
+* Run this command to get environment variables (to see them)
     ```sh
      terraform output -json backend_env
     ```
@@ -92,10 +102,8 @@ schema_registry_id = "lsrc-...."
     "SCHEMA_REGISTRY_URL":"https://psrc-....confluent.cloud"}
     ```
 
-* modify the backend/.env with the created API KEYs and SECRETs
+* modify the `backend/.env` with the created API KEYs and SECRETs using a dedicated script
     ```sh
-    # Export to backend.. under IaC folder
-    terraform output -raw backend_env_snippet >> ../backend/.env
     cd ../scripts
      ./update_backend_env_from_terraform.sh  
     ```
@@ -104,9 +112,26 @@ schema_registry_id = "lsrc-...."
 
 ### Reuse existing Confluent Cloud Resources
 
-In case you want to reuse an existing Confluent environment, Kafka cluster, schema registry and keys and secrets...
+In case you want to reuse an existing Confluent environment, Kafka cluster, schema registry and keys and secrets, set them in the `terraform.tfvars` file.
 
-To Be Completed
+```
+# ------------------------------------------
+# Optional: use existing Confluent infrastructure
+# ------------------------------------------
+# environment_id   = "env-r69ry1"
+# kafka_cluster_id = "lkc-jxqypp"
+# service_account_id = "sa-gqvnrzm"
+# flink_compute_pool_id = "lfcp-916r8m"
+
+# Existing API keys (optional; otherwise Terraform creates demo keys in app_credentials.tf)
+# kafka_api_key_id     = "..."
+# kafka_api_key_secret = "..."
+# schema_registry_api_key_id     = "..."
+# schema_registry_api_key_secret = "..."
+# flink_api_key_id     = "..."
+# flink_api_key_secret = "..."
+```
+
 
 ## Create CDC Topic
 
@@ -122,7 +147,7 @@ To Be Completed
     cd ..
     ```
  
-## Define environment variables in current shell
+## Update environment variables in current shell
 
 ```sh
 source set_env_var

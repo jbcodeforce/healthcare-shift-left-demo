@@ -14,21 +14,24 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Check if we're in the IaC directory
-if [ ! -f "tableflow.tf" ]; then
-    echo -e "${RED}❌ Error: Run this script from the IaC directory${NC}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+AWS_DIR="${SCRIPT_DIR}/aws"
+
+# Expect IaC/validate_tableflow.sh and IaC/aws/ (S3 is a separate Terraform root)
+if [ ! -f "${AWS_DIR}/main.tf" ]; then
+    echo -e "${RED}❌ Error: Expected ${AWS_DIR} (Tableflow AWS stack). Run this script from the repo IaC directory.${NC}"
     exit 1
 fi
 
-echo "📋 Step 1: Checking Terraform outputs..."
-if ! terraform output s3_analytics_bucket > /dev/null 2>&1; then
-    echo -e "${RED}❌ Terraform outputs not available. Run 'terraform apply' first.${NC}"
+echo "📋 Step 1: Checking Terraform outputs (IaC/aws)..."
+if ! terraform -chdir="${AWS_DIR}" output s3_analytics_bucket > /dev/null 2>&1; then
+    echo -e "${RED}❌ Terraform outputs not available. Run: cd ${AWS_DIR} && terraform init && terraform apply${NC}"
     exit 1
 fi
 
-BUCKET_NAME=$(terraform output -raw s3_analytics_bucket 2>/dev/null || echo "")
+BUCKET_NAME=$(terraform -chdir="${AWS_DIR}" output -raw s3_analytics_bucket 2>/dev/null || echo "")
 if [ -z "$BUCKET_NAME" ]; then
-    echo -e "${YELLOW}⚠️  Tableflow not enabled. Set enable_tableflow=true in terraform.tfvars${NC}"
+    echo -e "${YELLOW}⚠️  Tableflow S3 not enabled. Set enable_tableflow=true in IaC/aws/terraform.tfvars${NC}"
     exit 0
 fi
 
@@ -45,7 +48,7 @@ fi
 
 echo ""
 echo "📋 Step 3: Checking IAM role..."
-ROLE_ARN=$(terraform output -raw tableflow_iam_role_arn 2>/dev/null || echo "")
+ROLE_ARN=$(terraform -chdir="${AWS_DIR}" output -raw tableflow_iam_role_arn 2>/dev/null || echo "")
 if [ -z "$ROLE_ARN" ]; then
     echo -e "${RED}❌ IAM role not created${NC}"
     exit 1
@@ -69,16 +72,8 @@ for PATH in "anomalies" "prescription_changes" "telemetries"; do
 done
 
 echo ""
-echo "📋 Step 5: Checking Tableflow connections..."
-CONNECTIONS=$(terraform output -json tableflow_connections 2>/dev/null || echo "{}")
-CONNECTION_COUNT=$(echo "$CONNECTIONS" | jq 'length' 2>/dev/null || echo "0")
-
-if [ "$CONNECTION_COUNT" -eq 3 ]; then
-    echo -e "${GREEN}✅ All 3 Tableflow connections created${NC}"
-    echo "$CONNECTIONS" | jq -r 'to_entries[] | "  - \(.key): \(.value)"'
-else
-    echo -e "${RED}❌ Expected 3 connections, found ${CONNECTION_COUNT}${NC}"
-fi
+echo "📋 Step 5: Tableflow connections (Confluent UI)..."
+echo -e "${YELLOW}  S3 and IAM are Terraform; create the three connections/sinks in the Confluent Cloud UI (see README).${NC}"
 
 echo ""
 echo "📋 Step 6: Generating backend/.env snippet..."
@@ -87,7 +82,7 @@ echo ""
 echo "# Analytics S3 Configuration (from Tableflow)"
 echo "ANALYTICS_S3_BUCKET=${BUCKET_NAME}"
 echo "ANALYTICS_S3_PREFIX="
-REGION=$(terraform output -raw s3_analytics_bucket_region 2>/dev/null || echo "us-east-2")
+REGION=$(terraform -chdir="${AWS_DIR}" output -raw s3_analytics_bucket_region 2>/dev/null || echo "us-east-2")
 echo "AWS_REGION=${REGION}"
 echo ""
 
@@ -152,4 +147,4 @@ else
 fi
 
 echo ""
-echo "For troubleshooting, see: IaC/TABLEFLOW_SETUP_GUIDE.md"
+echo "For troubleshooting, see: IaC/README.md (Tableflow and S3)"

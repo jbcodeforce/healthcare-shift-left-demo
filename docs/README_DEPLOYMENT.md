@@ -7,7 +7,7 @@
 | **Get started quickly** | [QUICK_START.md](QUICK_START.md) | 30 min |
 | **Understand everything** | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | 45-60 min |
 | **Automate deployment** | [deploy.sh](deploy.sh) | 30 min |
-| **Set up Tableflow (S3)** | [IaC/TABLEFLOW_SETUP_GUIDE.md](IaC/TABLEFLOW_SETUP_GUIDE.md) | 20 min |
+| **Set up Tableflow (S3)** | [IaC/README.md — Tableflow and S3](IaC/README.md#tableflow-and-s3) | 20 min |
 | **Deploy with dbt** | [pipelines/DBT_DEPLOYMENT_GUIDE.md](pipelines/DBT_DEPLOYMENT_GUIDE.md) | 15 min |
 
 ---
@@ -38,35 +38,30 @@
    - Flink compute pools
    - API key management
 
-5. **[IaC/TABLEFLOW_SETUP_GUIDE.md](IaC/TABLEFLOW_SETUP_GUIDE.md)** - S3 analytics
-   - Tableflow configuration
-   - S3 bucket setup
-   - IAM role creation
-
-6. **[IaC/MANUAL_TABLEFLOW_STEPS.md](IaC/MANUAL_TABLEFLOW_STEPS.md)** - UI steps
-   - Confluence UI walkthrough
-   - Screenshots and details
-   - Verification steps
+5. **[IaC/README.md — Tableflow and S3](IaC/README.md#tableflow-and-s3)** - S3 analytics
+   - Terraform: S3 bucket and IAM; Confluent UI: connections and sinks
+   - Backend `ANALYTICS_S3_*` and verification
+   - [docs/TABLEFLOW_SETUP_GUIDE.md](TABLEFLOW_SETUP_GUIDE.md) (short intro; links to the same section on GitHub for the doc site)
 
 ### Data Pipelines
 
-7. **[pipelines/DBT_DEPLOYMENT_GUIDE.md](pipelines/DBT_DEPLOYMENT_GUIDE.md)** - Flink with dbt
+6. **[pipelines/DBT_DEPLOYMENT_GUIDE.md](pipelines/DBT_DEPLOYMENT_GUIDE.md)** - Flink with dbt
    - dbt integration
    - Model generation
    - Deployment options
 
-8. **[pipelines/README.md](pipelines/README.md)** - Pipeline overview
+7. **[pipelines/README.md](pipelines/README.md)** - Pipeline overview
    - Data flow architecture
    - SQL pipeline definitions
 
 ### Application
 
-9. **[backend/README.md](backend/README.md)** - Backend API
+8. **[backend/README.md](backend/README.md)** - Backend API
    - FastAPI setup
    - Kafka integration
    - Analytics endpoints
 
-10. **[frontend/README.md](frontend/README.md)** - Frontend UI
+9. **[frontend/README.md](frontend/README.md)** - Frontend UI
     - Vue.js application
     - Chart.js dashboards
     - Real-time telemetry
@@ -300,13 +295,12 @@ terraform apply
 # 1. Get External ID from Confluent
 # 2. Configure
 cd IaC
-nano terraform.tfvars  # Set enable_tableflow=true
+nano aws/terraform.tfvars  # in IaC/aws: set enable_tableflow=true (separate state)
 
 # 3. Deploy
 terraform apply
 
-# 4. Follow manual steps
-cat MANUAL_TABLEFLOW_STEPS.md
+# 4. Configure Tableflow in the Confluent UI (see IaC/README.md — Tableflow and S3)
 ```
 
 ---
@@ -332,7 +326,7 @@ terraform output -json | jq
 | Terraform fails | Check credentials | [IaC/README.md](IaC/README.md) |
 | Flink won't deploy | Source .env first | [pipelines/DBT_DEPLOYMENT_GUIDE.md](pipelines/DBT_DEPLOYMENT_GUIDE.md) |
 | Docker won't start | Check port conflicts | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#troubleshooting) |
-| No analytics data | Verify S3/local path | [IaC/TABLEFLOW_SETUP_GUIDE.md](IaC/TABLEFLOW_SETUP_GUIDE.md) |
+| No analytics data | Verify S3/local path | [IaC/README.md — Tableflow](IaC/README.md#tableflow-and-s3) |
 | Simulation not working | Check Kafka connection | [backend/README.md](backend/README.md) |
 
 ### Get Help

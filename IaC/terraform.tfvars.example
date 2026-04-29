@@ -1,58 +1,33 @@
-# Copy to terraform.tfvars and set your values.
-# Do not commit terraform.tfvars (it may contain secrets).
+# Copy to terraform.tfvars (this directory = Confluent core only). Do not commit secrets.
+# Flink SQL statements: use ../flink-statements/  |  S3/Tableflow IAM: use ../aws/
 
-# Required: Confluent Cloud API credentials
-# confluent_cloud_api_key    = "..."
-# confluent_cloud_api_secret = "..."
+# Required: Confluent Cloud API credentials (for Terraform resource management)
+confluent_cloud_api_key    = "<TO FILL>"
+confluent_cloud_api_secret = "<TO_FILL>"
 
-# Optional: cloud and region (defaults shown)
-# cloud_provider = "AWS"
-# cloud_region   = "us-east-1"
-# prefix         = "healthcare-demo"
+# Cloud configuration (from CLOUD_PROVIDER / CLOUD_REGION)
+cloud_provider = "AWS"
+cloud_region   = "us-west-2"
 
-# Optional: use existing environment and/or Kafka cluster (leave unset to create new)
-# When set, Terraform will not create these resources and will use the existing ones.
-# If kafka_cluster_id is set, environment_id must also be set.
-# environment_id    = null
-# kafka_cluster_id  = null
+# Resource naming
+prefix = "health"
 
-# Example: use existing environment and Kafka cluster
-# environment_id   = "env-xxxxx"
-# kafka_cluster_id = "lkc-xxxxx"
+# Flink compute pool (only when Terraform creates the pool; ignored when flink_compute_pool_id is set)
+# flink_compute_pool_name    = "healthcare-demo-pool"
+flink_compute_pool_max_cfu = 5
 
-# Optional: use existing service account (leave unset to create new)
-# When set, Terraform will not create a service account and will use the existing one.
-# API keys will still be created for this service account.
-# service_account_id = null
+# ------------------------------------------
+# Optional: use existing Confluent infrastructure
+# ------------------------------------------
+# environment_id   = "env-r69ry1"
+# kafka_cluster_id = "lkc-jxqypp"
+# service_account_id = "sa-gqvnrzm"
+# flink_compute_pool_id = "lfcp-916r8m"
 
-# Example: use existing service account
-# service_account_id = "sa-xxxxx"
-
-# Optional: use existing Flink compute pool (leave unset to create new)
-# When set, Terraform will not create a Flink compute pool and will use the existing one.
-# environment_id must also be set when using existing Flink compute pool.
-# flink_compute_pool_id = null
-
-# Example: use existing Flink compute pool
-# flink_compute_pool_id = "lfcp-xxxxx"
-
-# Flink compute pool
-# flink_compute_pool_name = "healthcare-demo-pool"
-# flink_compute_pool_max_cfu = 5
-
-# Kafka / Schema Registry / Flink API keys for the demo app are created by Terraform
-# (see app_credentials.tf). After apply: terraform output -raw backend_env_snippet
-
-# Flink statement deployment
-# deploy_flink_statements = true
-# statement_name_prefix   = "hc-demo"
-
-# Tableflow and S3 configuration (for writing Flink data to S3)
-# Enable this after Flink tables are created and running
-# enable_tableflow = false
-
-# External ID for Confluent Tableflow IAM role (obtain from Confluent support or docs)
-# confluent_external_id = "your-external-id-here"
-
-# Confluent AWS Account ID (default is Confluent's account for Tableflow)
-# confluent_aws_account_id = "761327592718"
+# Existing API keys (optional; otherwise Terraform creates demo keys in app_credentials.tf)
+# kafka_api_key_id     = "..."
+# kafka_api_key_secret = "..."
+# schema_registry_api_key_id     = "..."
+# schema_registry_api_key_secret = "..."
+# flink_api_key_id     = "..."
+# flink_api_key_secret = "..."
