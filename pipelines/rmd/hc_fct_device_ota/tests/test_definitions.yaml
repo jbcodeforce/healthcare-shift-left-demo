@@ -1,0 +1,28 @@
+foundations:
+- table_name: hc_raw_device_events
+  ddl_for_test: ./tests/ddl_hc_raw_device_events.sql
+- table_name: hc_src_device_update_allowlist
+  ddl_for_test: ./tests/ddl_hc_src_device_update_allowlist.sql
+- table_name: hc_src_device_assignments
+  ddl_for_test: ./tests/ddl_hc_src_device_assignments.sql
+- table_name: hc_src_patients
+  ddl_for_test: ./tests/ddl_hc_src_patients.sql
+test_suite:
+- name: test_ota_eligible
+  inputs:
+  - table_name: hc_src_device_assignments
+    file_name: ./tests/insert_assignments.sql
+    file_type: sql
+  - table_name: hc_src_device_update_allowlist
+    file_name: ./tests/insert_allowlist.sql
+    file_type: sql
+  - table_name: hc_src_patients
+    file_name: ./tests/insert_patients.sql
+    file_type: sql
+  - table_name: hc_raw_device_events
+    file_name: ./tests/insert_power_status.sql
+    file_type: sql
+  outputs:
+  - table_name: hc_fct_device_update_commands
+    file_name: ./tests/validate_update_command.sql
+    file_type: sql

@@ -1,0 +1,35 @@
+foundations:
+- table_name: hc_raw_device_events
+  ddl_for_test: ./tests/ddl_hc_raw_device_events.sql
+- table_name: hc_src_device_assignments
+  ddl_for_test: ./tests/ddl_hc_src_device_assignments.sql
+- table_name: hc_fct_assignment_verification_registry
+  ddl_for_test: ./tests/ddl_hc_fct_assignment_verification_registry.sql
+test_suite:
+- name: test_first_button_press
+  inputs:
+  - table_name: hc_src_device_assignments
+    file_name: ./tests/insert_assignments.sql
+    file_type: sql
+  - table_name: hc_raw_device_events
+    file_name: ./tests/insert_button_press_1.sql
+    file_type: sql
+  outputs:
+  - table_name: hc_fct_device_verification
+    file_name: ./tests/validate_verification.sql
+    file_type: sql
+- name: test_repeat_button_press
+  inputs:
+  - table_name: hc_src_device_assignments
+    file_name: ./tests/insert_assignments.sql
+    file_type: sql
+  - table_name: hc_fct_assignment_verification_registry
+    file_name: ./tests/insert_registry.sql
+    file_type: sql
+  - table_name: hc_raw_device_events
+    file_name: ./tests/insert_button_press_2.sql
+    file_type: sql
+  outputs:
+  - table_name: hc_fct_device_alert
+    file_name: ./tests/validate_alert.sql
+    file_type: sql

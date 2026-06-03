@@ -1,0 +1,2 @@
+INSERT INTO hc_src_device_assignments_ut
+VALUES ('ASSIGN-P001', 'DEV-P001', 'P001', 1710000000000, TRUE);

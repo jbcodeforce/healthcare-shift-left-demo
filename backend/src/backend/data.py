@@ -39,26 +39,95 @@ def get_patients() -> list[dict]:
             "gender": names[i - 1][1],
             "birthDate": names[i - 1][2],
             "zipCode": names[i - 1][3],
+            "timezone": "America/Chicago",
         }
         for i, pid in enumerate(ids, start=1)
     ]
 
 
+# Chicago-area lifecycle state per patient (aligned with device_event_simulation geofences)
+_CHICAGO_DEFAULT_LAT = 41.8781
+_CHICAGO_DEFAULT_LNG = -87.6298
+_SW_VERSIONS = ("1.2.0", "2.0.0")
+
+# softwareVersion, latitude, longitude, batteryLevel (33–90), plugged
+_DEVICE_LIFECYCLE: dict[str, dict] = {
+    "P001": {
+        "sw_version": "1.2.0",
+        "latitude": 41.8786,
+        "longitude": -87.6293,
+        "batteryLevel": 87,
+        "plugged": False,
+        "hw_model": "RMD-100",
+    },
+    "P002": {
+        "sw_version": "2.0.0",
+        "latitude": 41.9219,
+        "longitude": -87.6508,
+        "batteryLevel": 72,
+        "plugged": False,
+        "hw_model": "RMD-100",
+    },
+    "P003": {
+        "sw_version": "1.2.0",
+        "latitude": 41.9489,
+        "longitude": -87.6558,
+        "batteryLevel": 45,
+        "plugged": False,
+        "hw_model": "RMD-110",
+    },
+    "P004": {
+        "sw_version": "2.0.0",
+        "latitude": 41.7948,
+        "longitude": -87.5901,
+        "batteryLevel": 90,
+        "plugged": True,
+        "hw_model": "RMD-110",
+    },
+    "P005": {
+        "sw_version": "1.2.0",
+        "latitude": 41.8566,
+        "longitude": -87.6244,
+        "batteryLevel": 33,
+        "plugged": False,
+        "hw_model": "RMD-110",
+    },
+}
+
+
+def _lifecycle_for_patient(patient_id: str, index: int) -> dict:
+    """Return device lifecycle fields; use defaults for patients beyond the demo set."""
+    if patient_id in _DEVICE_LIFECYCLE:
+        return dict(_DEVICE_LIFECYCLE[patient_id])
+    battery = min(90, max(33, 33 + (index * 11) % 58))
+    return {
+        "sw_version": _SW_VERSIONS[index % len(_SW_VERSIONS)],
+        "latitude": _CHICAGO_DEFAULT_LAT,
+        "longitude": _CHICAGO_DEFAULT_LNG,
+        "batteryLevel": battery,
+        "plugged": battery >= 50,
+    }
+
+
 def get_devices() -> list[dict]:
-    """Return list of devices (one per patient) aligned with simulation."""
+    """Return list of devices (one per patient) aligned with simulation and BBH device events."""
     patients = get_patients()
-    # Default settings similar to README Device class
-    return [
-        {
-            "device_id": _device_id(p["patientId"]),
-            "patientId": p["patientId"],
-            "pressureSetting": 10.0 + (i % 3),
-            "flowRateSetting": 2.5 + (i % 3) * 0.2,
-            "flowLevelSetting": 120.0 + (i % 4) * 40.0,  # demo targets in 0–300 (telemetry FlowLevel)
-            "flowLevel": 120.0 + (i % 4) * 40.0,  # alias for UI (same scale as telemetry FlowLevel)
-        }
-        for i, p in enumerate(patients)
-    ]
+    out: list[dict] = []
+    for i, p in enumerate(patients):
+        pid = p["patientId"]
+        lifecycle = _lifecycle_for_patient(pid, i)
+        out.append(
+            {
+                "device_id": _device_id(pid),
+                "patientId": pid,
+                "pressureSetting": 10.0 + (i % 3),
+                "flowRateSetting": 2.5 + (i % 3) * 0.2,
+                "flowLevelSetting": 120.0 + (i % 4) * 40.0,
+                "flowLevel": 120.0 + (i % 4) * 40.0,
+                **lifecycle,
+            }
+        )
+    return out
 
 
 def get_prescriptions() -> list[dict]:

@@ -7,8 +7,6 @@ import {
   createPrescription,
   deletePrescription,
 } from '../api/deviceGenerator.js'
-import { mockPrescriptions, mockDevices } from '../data/mockData.js'
-
 const prescriptions = ref([])
 const devices = ref([])
 const patients = ref([])
@@ -113,8 +111,8 @@ async function loadPrescriptions() {
     error.value = null
   } catch (e) {
     error.value = e.message
-    prescriptions.value = mockPrescriptions
-    devices.value = mockDevices
+    prescriptions.value = []
+    devices.value = []
     patients.value = []
   }
 }
@@ -186,7 +184,7 @@ onMounted(loadPrescriptions)
         New prescription
       </button>
     </div>
-    <p v-if="error" class="error-msg">Backend unavailable, showing mock data: {{ error }}</p>
+    <p v-if="error" class="error-msg">Could not load prescriptions from the backend: {{ error }}</p>
     <p v-if="createSuccess" class="success-msg">{{ createSuccess }}</p>
 
     <section v-if="showCreateForm" class="create-form card">

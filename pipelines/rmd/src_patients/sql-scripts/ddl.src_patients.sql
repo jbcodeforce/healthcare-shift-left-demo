@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS hc_src_patients (
   gender       STRING COMMENT 'Gender',
   birth_date   STRING COMMENT 'Birth date',
   zip_code     STRING COMMENT 'Zip code (for geo-aggregations)',
+  timezone     STRING COMMENT 'IANA timezone for daylight-hour OTA gate',
   source_ts_ms BIGINT COMMENT 'Source timestamp in milliseconds',
   op           STRING COMMENT 'Debezium op: c=create, u=update, d=delete, r=read/snapshot',
   PRIMARY KEY (patient_id) NOT ENFORCED

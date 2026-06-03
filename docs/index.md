@@ -73,6 +73,7 @@ As part of moving from batch to real-time processing the following dimensions an
 | **fact_drift_events** | Assess devise metric vs prescription, one row per drift alert  | [dml.hc_fct_drift_evts.sql](https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/rmd/hc_fct_drift_evts/sql-scripts/dml.hc_fct_drift_evts.sql) |
 | **Telemetry Facts** | fact_telemetry_1h: windowed aggregates per device/patient/metric. fact_compliance_1h: in-range vs total readings (and optionally compliance_pct) per window. | [dml.hc_fct_telemetry_1h.sql](https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/rmd/hc_fct_telemetries/sql-scripts/dml.hc_fct_telemetry_1h.sql) |
 | **Anomaly Detection** | Fact table to compute anomaly on Pressure, FlowRate or FlowLevel | [hc_fct_dev_anomaly.sql](https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/rmd/hc_fct_dev_anomaly/sql-scripts/dml.hc_fct_dev_anomaly.sql) |
+| **BBH device events** | Button routing, geofence, enrichment, DQ, OTA (Best Buy Health patterns) | [pipelines/rmd/README.md](../pipelines/rmd/README.md) |
 
 To study how those facts are created, [see these explanations](./demonstration_script.md).
 

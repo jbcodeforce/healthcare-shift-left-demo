@@ -43,8 +43,15 @@ from backend.simulation import (
 )
 from backend.simulator import (
     run_flow_rate_down,
-    run_pressure_oscillate,
     run_flow_level_down,
+    run_pressure_oscillate,
+)
+from backend.device_event_simulation import (
+    seed_bbh_dimensions,
+    simulate_bbh_scenarios,
+    simulate_button_press,
+    simulate_gps,
+    simulate_power_status,
 )
 from backend.telemetry_1h_consumer import create_telemetry_1h_consumer, log_consumed_record, run_poll_loop
 from backend.telemetry_1h_stats import record_consumed_message
@@ -126,6 +133,10 @@ async def lifespan(app: FastAPI):
             logger.info("Prescriptions table already has %d rows", n)
     except Exception as e:
         logger.debug("Prescriptions seed skipped or failed: %s", e)
+    try:
+        seed_bbh_dimensions()
+    except Exception as e:
+        logger.debug("BBH dimension seed skipped or failed: %s", e)
     yield
     if consumer_stop is not None:
         consumer_stop.set()
@@ -373,6 +384,79 @@ def device_simulator(device_id: str, sim_type: SimulatorType) -> dict[str, str]:
     except Exception as e:
         logger.exception("Simulator failed for %s: %s", device_id, e)
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+# ---------- BBH-style device events (button, power, GPS) ----------
+
+
+class DeviceEventRequest(BaseModel):
+    patient_id: str | None = None
+
+
+class PowerStatusRequest(BaseModel):
+    patient_id: str | None = None
+    battery_level: int = 75
+    plugged: bool = True
+
+
+class GpsRequest(BaseModel):
+    patient_id: str | None = None
+    inside_geofence: bool = True
+
+
+def _resolve_device(device_id: str) -> tuple[str, str]:
+    devices = get_devices()
+    for d in devices:
+        if d["device_id"] == device_id:
+            return d["device_id"], d["patientId"]
+    raise HTTPException(status_code=404, detail="Device not found")
+
+
+@app.post("/device/{device_id}/events/button-press")
+def device_event_button_press(device_id: str, body: DeviceEventRequest | None = None) -> dict:
+    """Emit BUTTON_PRESSED for first-press routing demo."""
+    dev_id, default_pid = _resolve_device(device_id)
+    pid = (body.patient_id if body else None) or default_pid
+    try:
+        return simulate_button_press(dev_id, pid)
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail="Kafka unavailable.") from e
+
+
+@app.post("/device/{device_id}/events/power-status")
+def device_event_power_status(device_id: str, body: PowerStatusRequest | None = None) -> dict:
+    """Emit POWER_STATUS for OTA eligibility demo."""
+    dev_id, default_pid = _resolve_device(device_id)
+    req = body or PowerStatusRequest()
+    pid = req.patient_id or default_pid
+    try:
+        return simulate_power_status(
+            dev_id, pid, battery_level=req.battery_level, plugged=req.plugged
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail="Kafka unavailable.") from e
+
+
+@app.post("/device/{device_id}/events/gps")
+def device_event_gps(device_id: str, body: GpsRequest | None = None) -> dict:
+    """Emit GPS event inside or outside caregiver geofence."""
+    dev_id, default_pid = _resolve_device(device_id)
+    req = body or GpsRequest()
+    pid = req.patient_id or default_pid
+    try:
+        return simulate_gps(dev_id, pid, inside_geofence=req.inside_geofence)
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail="Kafka unavailable.") from e
+
+
+@app.post("/device-events/simulate-all")
+def device_events_simulate_all(device_id: str | None = None) -> dict:
+    """Run button, power, and GPS scenarios for demo walkthrough."""
+    try:
+        results = simulate_bbh_scenarios(device_id)
+        return {"status": "ok", "events": results}
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail="Kafka unavailable.") from e
 
 
 # ---------- Telemetry SSE (existing) ----------

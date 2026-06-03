@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     kafka_security_protocol: str = "SASL_SSL"
     kafka_sasl_mechanism: str = "PLAIN"
     kafka_topic: str = "hc_raw_device_metrics"
+    kafka_device_events_topic: str = "hc_raw_device_events"
+    kafka_device_assignments_topic: str = "hc_src_device_assignments"
+    kafka_care_areas_topic: str = "hc_dim_care_areas"
+    kafka_update_allowlist_topic: str = "hc_src_device_update_allowlist"
 
     # Schema Registry (Confluent Cloud)
     schema_registry_url: str = ""
