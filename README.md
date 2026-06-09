@@ -10,6 +10,8 @@ Created 03/10/2026 - Updated 04/09/2026
 
 The scope of this repository is to build end-to-end healthcare doman demonstrations, starting from Debezium CDC to Confluent Cloud Kafka, Flink SQL to process Raw->Bronze->Silver->Gold records, to sink s3 parquet/iceberg tables.
 
+![](./docs/images/pipeline-view.drawio.png)
+
 The approach is to use healthcare use cases, like Patient records, health provider, prescriptions and device management. 
 
 The demonstration illustrates:
@@ -21,6 +23,3 @@ The audiance of this demonstration is data engineers to understand the art of fe
 [See the published documentation](https://jbcodeforce.github.io/healthcare-shift-left-demo)
 
 
-## To dos
-
-* [ ] device button pressed: SQL deployment

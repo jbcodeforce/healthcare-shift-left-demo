@@ -6,7 +6,7 @@ _REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 export FLINK_PROJECT=$_REPO_ROOT
 export PIPELINES=$FLINK_PROJECT/pipelines
-export CONFIG_FILE=$_REPO_ROOT/scripts/config-ccloud.yaml
+export SL_CONFIG_FILE=$_REPO_ROOT/scripts/config-ccloud.yaml
 
 export CCLOUD_CONTEXT=login-jboyer@confluent.io-https://confluent.cloud
 

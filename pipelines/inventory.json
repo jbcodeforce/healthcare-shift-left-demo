@@ -1,154 +1,137 @@
 {
-    "hc_dim_patients": {
-        "table_name": "hc_dim_patients",
-        "product_name": "rmd",
-        "type": "unknown-type",
-        "dml_ref": "pipelines/rmd/hc_dim_patients/sql-scripts/dml.dim_patients.sql",
-        "ddl_ref": "pipelines/rmd/hc_dim_patients/sql-scripts/ddl.dim_patients.sql",
-        "table_folder_name": "pipelines/rmd/hc_dim_patients"
-    },
     "hc_dim_care_areas": {
         "table_name": "hc_dim_care_areas",
         "product_name": "rmd",
-        "type": "unknown-type",
+        "type": "dimension",
         "dml_ref": "",
-        "ddl_ref": "pipelines/rmd/hc_dim_care_areas/sql-scripts/ddl.hc_dim_care_areas.sql",
-        "table_folder_name": "pipelines/rmd/hc_dim_care_areas"
+        "ddl_ref": "pipelines/dimensions/rmd/hc_dim_care_areas/sql-scripts/ddl.hc_dim_care_areas.sql",
+        "table_folder_name": "pipelines/dimensions/rmd/hc_dim_care_areas",
+        "kafka_topic": null
     },
-    "hc_fct_button_routing": {
-        "table_name": "hc_fct_button_routing",
+    "hc_dim_cell_tower_zones": {
+        "table_name": "hc_dim_cell_tower_zones",
         "product_name": "rmd",
-        "type": "unknown-type",
-        "dml_ref": "pipelines/rmd/hc_fct_button_routing/sql-scripts/dml.hc_fct_button_routing.sql",
-        "ddl_ref": "pipelines/rmd/hc_fct_button_routing/sql-scripts/ddl.hc_fct_button_routing.sql",
-        "table_folder_name": "pipelines/rmd/hc_fct_button_routing"
+        "type": "fact",
+        "dml_ref": "pipelines/facts/rmd/hc_fct_device_events_dq/sql-scripts/dml.hc_fct_device_events_dq.sql",
+        "ddl_ref": "pipelines/facts/rmd/hc_fct_device_events_dq/sql-scripts/ddl.hc_fct_device_events_dq.sql",
+        "table_folder_name": "pipelines/facts/rmd/hc_fct_device_events_dq",
+        "kafka_topic": null
+    },
+    "hc_dim_patients": {
+        "table_name": "hc_dim_patients",
+        "product_name": "rmd",
+        "type": "dimension",
+        "dml_ref": "pipelines/dimensions/rmd/hc_dim_patients/sql-scripts/dml.dim_patients.sql",
+        "ddl_ref": "pipelines/dimensions/rmd/hc_dim_patients/sql-scripts/ddl.dim_patients.sql",
+        "table_folder_name": "pipelines/dimensions/rmd/hc_dim_patients",
+        "kafka_topic": null
+    },
+    "hc_fct_assignment_verification_registry": {
+        "table_name": "hc_fct_assignment_verification_registry",
+        "product_name": "rmd",
+        "type": "fact",
+        "dml_ref": "pipelines/facts/rmd/hc_fct_button_routing/sql-scripts/dml.hc_fct_button_routing.sql",
+        "ddl_ref": "pipelines/facts/rmd/hc_fct_button_routing/sql-scripts/ddl.hc_fct_button_routing.sql",
+        "table_folder_name": "pipelines/facts/rmd/hc_fct_button_routing",
+        "kafka_topic": null
     },
     "hc_fct_dev_anomaly": {
         "table_name": "hc_fct_dev_anomaly",
         "product_name": "rmd",
-        "type": "unknown-type",
-        "dml_ref": "pipelines/rmd/hc_fct_dev_anomaly/sql-scripts/dml.hc_fct_dev_anomaly.sql",
-        "ddl_ref": "pipelines/rmd/hc_fct_dev_anomaly/sql-scripts/ddl.hc_fct_dev_anomaly.sql",
-        "table_folder_name": "pipelines/rmd/hc_fct_dev_anomaly"
-    },
-    "hc_fct_device_events_dq": {
-        "table_name": "hc_fct_device_events_dq",
-        "product_name": "rmd",
-        "type": "unknown-type",
-        "dml_ref": "pipelines/rmd/hc_fct_device_events_dq/sql-scripts/dml.hc_fct_device_events_dq.sql",
-        "ddl_ref": "pipelines/rmd/hc_fct_device_events_dq/sql-scripts/ddl.hc_fct_device_events_dq.sql",
-        "table_folder_name": "pipelines/rmd/hc_fct_device_events_dq"
+        "type": "fact",
+        "dml_ref": "pipelines/facts/rmd/hc_fct_dev_anomaly/sql-scripts/dml.hc_fct_dev_anomaly.sql",
+        "ddl_ref": "pipelines/facts/rmd/hc_fct_dev_anomaly/sql-scripts/ddl.hc_fct_dev_anomaly.sql",
+        "table_folder_name": "pipelines/facts/rmd/hc_fct_dev_anomaly",
+        "kafka_topic": null
     },
     "hc_fct_device_events_enriched": {
         "table_name": "hc_fct_device_events_enriched",
         "product_name": "rmd",
-        "type": "unknown-type",
-        "dml_ref": "pipelines/rmd/hc_fct_device_events_enriched/sql-scripts/dml.hc_fct_device_events_enriched.sql",
-        "ddl_ref": "pipelines/rmd/hc_fct_device_events_enriched/sql-scripts/ddl.hc_fct_device_events_enriched.sql",
-        "table_folder_name": "pipelines/rmd/hc_fct_device_events_enriched"
+        "type": "fact",
+        "dml_ref": "pipelines/facts/rmd/hc_fct_device_events_enriched/sql-scripts/dml.hc_fct_device_events_enriched.sql",
+        "ddl_ref": "pipelines/facts/rmd/hc_fct_device_events_enriched/sql-scripts/ddl.hc_fct_device_events_enriched.sql",
+        "table_folder_name": "pipelines/facts/rmd/hc_fct_device_events_enriched",
+        "kafka_topic": null
     },
-    "hc_fct_device_ota": {
-        "table_name": "hc_fct_device_ota",
+    "hc_fct_device_power_latest": {
+        "table_name": "hc_fct_device_power_latest",
         "product_name": "rmd",
-        "type": "unknown-type",
-        "dml_ref": "pipelines/rmd/hc_fct_device_ota/sql-scripts/dml.hc_fct_device_ota.sql",
-        "ddl_ref": "pipelines/rmd/hc_fct_device_ota/sql-scripts/ddl.hc_fct_device_ota.sql",
-        "table_folder_name": "pipelines/rmd/hc_fct_device_ota"
+        "type": "fact",
+        "dml_ref": "pipelines/facts/rmd/hc_fct_device_ota/sql-scripts/dml.hc_fct_device_ota.sql",
+        "ddl_ref": "pipelines/facts/rmd/hc_fct_device_ota/sql-scripts/ddl.hc_fct_device_ota.sql",
+        "table_folder_name": "pipelines/facts/rmd/hc_fct_device_ota",
+        "kafka_topic": null
     },
     "hc_fct_drift_evts": {
         "table_name": "hc_fct_drift_evts",
         "product_name": "rmd",
-        "type": "unknown-type",
-        "dml_ref": "pipelines/rmd/hc_fct_drift_evts/sql-scripts/dml.hc_fct_drift_evts.sql",
-        "ddl_ref": "pipelines/rmd/hc_fct_drift_evts/sql-scripts/ddl.hc_fct_drift_evts.sql",
-        "table_folder_name": "pipelines/rmd/hc_fct_drift_evts"
+        "type": "fact",
+        "dml_ref": "pipelines/facts/rmd/hc_fct_drift_evts/sql-scripts/dml.hc_fct_drift_evts.sql",
+        "ddl_ref": "pipelines/facts/rmd/hc_fct_drift_evts/sql-scripts/ddl.hc_fct_drift_evts.sql",
+        "table_folder_name": "pipelines/facts/rmd/hc_fct_drift_evts",
+        "kafka_topic": null
     },
     "hc_fct_geofence_alerts": {
         "table_name": "hc_fct_geofence_alerts",
         "product_name": "rmd",
-        "type": "unknown-type",
-        "dml_ref": "pipelines/rmd/hc_fct_geofence_alerts/sql-scripts/dml.hc_fct_geofence_alerts.sql",
-        "ddl_ref": "pipelines/rmd/hc_fct_geofence_alerts/sql-scripts/ddl.hc_fct_geofence_alerts.sql",
-        "table_folder_name": "pipelines/rmd/hc_fct_geofence_alerts"
+        "type": "fact",
+        "dml_ref": "pipelines/facts/rmd/hc_fct_geofence_alerts/sql-scripts/dml.hc_fct_geofence_alerts.sql",
+        "ddl_ref": "pipelines/facts/rmd/hc_fct_geofence_alerts/sql-scripts/ddl.hc_fct_geofence_alerts.sql",
+        "table_folder_name": "pipelines/facts/rmd/hc_fct_geofence_alerts",
+        "kafka_topic": null
     },
     "hc_fct_telemetry_1h": {
         "table_name": "hc_fct_telemetry_1h",
         "product_name": "rmd",
-        "type": "unknown-type",
-        "dml_ref": "pipelines/rmd/hc_fct_telemetries/sql-scripts/dml.hc_fct_telemetry_1h.sql",
-        "ddl_ref": "pipelines/rmd/hc_fct_telemetries/sql-scripts/ddl.hc_fct_telemetry_1h.sql",
-        "table_folder_name": "pipelines/rmd/hc_fct_telemetries"
+        "type": "fact",
+        "dml_ref": "pipelines/facts/rmd/hc_fct_telemetries/sql-scripts/dml.hc_fct_telemetry_1h.sql",
+        "ddl_ref": "pipelines/facts/rmd/hc_fct_telemetries/sql-scripts/ddl.hc_fct_telemetry_1h.sql",
+        "table_folder_name": "pipelines/facts/rmd/hc_fct_telemetries",
+        "kafka_topic": null
+    },
+    "hc_raw_device_assignments": {
+        "table_name": "hc_raw_device_assignments",
+        "product_name": "raw",
+        "type": "seed",
+        "dml_ref": "pipelines/seeds/raw/raw_device_assignments/sql-scripts/dml.hc_raw_device_assignments.sql",
+        "ddl_ref": "pipelines/seeds/raw/raw_device_assignments/sql-scripts/ddl.hc_raw_device_assignments.sql",
+        "table_folder_name": "pipelines/seeds/raw/raw_device_assignments",
+        "kafka_topic": null
     },
     "hc_raw_device_events": {
         "table_name": "hc_raw_device_events",
         "product_name": "raw",
-        "type": "unknown-type",
-        "dml_ref": "pipelines/raw/raw_device_events/sql-scripts/dml.device_events.sql",
-        "ddl_ref": "pipelines/raw/raw_device_events/sql-scripts/ddl.device_events.sql",
-        "table_folder_name": "pipelines/raw/raw_device_events"
+        "type": "seed",
+        "dml_ref": "pipelines/seeds/raw/raw_device_events/sql-scripts/dml.device_events.sql",
+        "ddl_ref": "pipelines/seeds/raw/raw_device_events/sql-scripts/ddl.device_events.sql",
+        "table_folder_name": "pipelines/seeds/raw/raw_device_events",
+        "kafka_topic": null
     },
     "hc_raw_device_metrics": {
         "table_name": "hc_raw_device_metrics",
         "product_name": "raw",
-        "type": "unknown-type",
-        "dml_ref": "pipelines/raw/raw_device_metrics/sql-scripts/dml.device_metrics.sql",
-        "ddl_ref": "pipelines/raw/raw_device_metrics/sql-scripts/ddl.device_metrics.sql",
-        "table_folder_name": "pipelines/raw/raw_device_metrics"
+        "type": "seed",
+        "dml_ref": "pipelines/seeds/raw/raw_device_metrics/sql-scripts/dml.device_metrics.sql",
+        "ddl_ref": "pipelines/seeds/raw/raw_device_metrics/sql-scripts/ddl.device_metrics.sql",
+        "table_folder_name": "pipelines/seeds/raw/raw_device_metrics",
+        "kafka_topic": null
     },
     "hc_raw_devices": {
         "table_name": "hc_raw_devices",
         "product_name": "raw",
-        "type": "unknown-type",
-        "dml_ref": "pipelines/raw/raw_devices/sql-scripts/dml.raw_devices.sql",
-        "ddl_ref": "pipelines/raw/raw_devices/sql-scripts/ddl.raw_devices.sql",
-        "table_folder_name": "pipelines/raw/raw_devices"
+        "type": "seed",
+        "dml_ref": "pipelines/seeds/raw/raw_devices/sql-scripts/dml.raw_devices.sql",
+        "ddl_ref": "pipelines/seeds/raw/raw_devices/sql-scripts/ddl.raw_devices.sql",
+        "table_folder_name": "pipelines/seeds/raw/raw_devices",
+        "kafka_topic": null
     },
     "hc_raw_patients": {
         "table_name": "hc_raw_patients",
         "product_name": "raw",
-        "type": "unknown-type",
-        "dml_ref": "pipelines/raw/raw_patients/sql-scripts/dml.raw_patients.sql",
-        "ddl_ref": "pipelines/raw/raw_patients/sql-scripts/ddl.raw_patients.sql",
-        "table_folder_name": "pipelines/raw/raw_patients"
-    },
-    "hc_src_device_assignments": {
-        "table_name": "hc_src_device_assignments",
-        "product_name": "rmd",
-        "type": "unknown-type",
-        "dml_ref": "",
-        "ddl_ref": "pipelines/rmd/hc_src_device_assignments/sql-scripts/ddl.hc_src_device_assignments.sql",
-        "table_folder_name": "pipelines/rmd/hc_src_device_assignments"
-    },
-    "hc_src_device_update_allowlist": {
-        "table_name": "hc_src_device_update_allowlist",
-        "product_name": "rmd",
-        "type": "unknown-type",
-        "dml_ref": "",
-        "ddl_ref": "pipelines/rmd/hc_src_device_update_allowlist/sql-scripts/ddl.hc_src_device_update_allowlist.sql",
-        "table_folder_name": "pipelines/rmd/hc_src_device_update_allowlist"
-    },
-    "hc_src_devices": {
-        "table_name": "hc_src_devices",
-        "product_name": "rmd",
-        "type": "unknown-type",
-        "dml_ref": "pipelines/rmd/src_devices/sql-scripts/dml.src_devices.sql",
-        "ddl_ref": "pipelines/rmd/src_devices/sql-scripts/ddl.src_devices.sql",
-        "table_folder_name": "pipelines/rmd/src_devices"
-    },
-    "hc_src_patients": {
-        "table_name": "hc_src_patients",
-        "product_name": "rmd",
-        "type": "unknown-type",
-        "dml_ref": "pipelines/rmd/src_patients/sql-scripts/dml.src_patients.sql",
-        "ddl_ref": "pipelines/rmd/src_patients/sql-scripts/ddl.src_patients.sql",
-        "table_folder_name": "pipelines/rmd/src_patients"
-    },
-    "hc_src_prescriptions": {
-        "table_name": "hc_src_prescriptions",
-        "product_name": "rmd",
-        "type": "unknown-type",
-        "dml_ref": "pipelines/rmd/src_prescriptions/sql-scripts/dml.src_prescriptions.sql",
-        "ddl_ref": "pipelines/rmd/src_prescriptions/sql-scripts/ddl.src_prescriptions.sql",
-        "table_folder_name": "pipelines/rmd/src_prescriptions"
+        "type": "seed",
+        "dml_ref": "pipelines/seeds/raw/raw_patients/sql-scripts/dml.raw_patients.sql",
+        "ddl_ref": "pipelines/seeds/raw/raw_patients/sql-scripts/ddl.raw_patients.sql",
+        "table_folder_name": "pipelines/seeds/raw/raw_patients",
+        "kafka_topic": null
     }
 }

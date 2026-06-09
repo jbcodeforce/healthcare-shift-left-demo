@@ -116,6 +116,35 @@ Device has an emergency button that user can press. For device initiation, the u
 | fc_device_alert | []() | |
 
 
+### Geofence Crossing
+
+For users at risk of wandering off, we allow caregivers to provide geofences.  When a GPS coordinate is outside the geofence, we can alert the caregivers. This implementation can leverage the UDFs  named [geo-distance](https://github.com/jbcodeforce/flink-udfs-catalog/tree/main/geo_distance) and [within-area](https://github.com/jbcodeforce/flink-udfs-catalog/tree/main/within_area).
+
+### Device management
+
+Update software firmware for allowed device. This is like implementing a statge machine for each device. 
+
+* From the device events we should be able to assess the devices most recent power status event, indicating they are on their charger and at least 50% charged.
+* The current time in the user's time zone is during daylight hour
+* The device has not already been updated.
+
+State machine (one update per device + target firmware version):
+
+```text
+WAITING ──(on allowlist + charger + battery>=50)──► CHARGING_READY
+CHARGING_READY ──(local daylight hour)──► UPDATE_PENDING
+UPDATE_PENDING ──(command emitted)──► UPDATED (terminal)
+WAITING ◄──(removed from allowlist or unplugged)── CHARGING_READY
+```
+
+* `WAITING`: device not eligible or power preconditions not met.
+* `CHARGING_READY`: allowlisted, latest power status on charger and ≥50%, not yet daylight locally.
+* `UPDATE_PENDING`: all preconditions met; Flink emits one command.
+* `UPDATED`: registry row prevents duplicate commands for the same `(imei, target_sw_version)`.
+
+* Re-evaluation is driven by each incoming `POWER_STATUS` event. A device that becomes eligible overnight is picked up on the next power event after local daylight begins (or add a scheduled re-scan statement if sub-hour latency is required).
+* Registry PK `(imei, target_sw_version)` gives a new verification cycle when ops bumps `target_sw_version` on the allowlist.
+
 
 ### Other extensions
 

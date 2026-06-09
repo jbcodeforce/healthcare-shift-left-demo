@@ -1,0 +1,265 @@
+{
+   "table_name": "hc_fct_assignment_verification_registry",
+   "product_name": "rmd",
+   "type": "fact",
+   "dml_ref": "pipelines/facts/rmd/hc_fct_button_routing/sql-scripts/dml.hc_fct_button_routing.sql",
+   "ddl_ref": "pipelines/facts/rmd/hc_fct_button_routing/sql-scripts/ddl.hc_fct_button_routing.sql",
+   "path": "pipelines/facts/rmd/hc_fct_button_routing",
+   "kafka_topic": null,
+   "complexity": {
+      "number_of_regular_joins": 0,
+      "number_of_left_joins": 2,
+      "number_of_right_joins": 0,
+      "number_of_inner_joins": 4,
+      "number_of_outer_joins": 0,
+      "complexity_type": "Complex",
+      "state_form": "Stateful"
+   },
+   "parents": [
+      {
+         "table_name": "hc_fct_device_alert",
+         "product_name": "seeds",
+         "type": "external_kafka",
+         "dml_ref": "",
+         "ddl_ref": "",
+         "path": "pipelines/seeds/hc_fct_device_alert",
+         "kafka_topic": "hc_fct_device_alert",
+         "complexity": {
+            "number_of_regular_joins": 0,
+            "number_of_left_joins": 0,
+            "number_of_right_joins": 0,
+            "number_of_inner_joins": 0,
+            "number_of_outer_joins": 0,
+            "complexity_type": "Simple",
+            "state_form": "Stateless"
+         },
+         "parents": [],
+         "children": [
+            {
+               "table_name": "hc_fct_assignment_verification_registry",
+               "product_name": "rmd",
+               "type": "fact",
+               "dml_ref": "pipelines/facts/rmd/hc_fct_button_routing/sql-scripts/dml.hc_fct_button_routing.sql",
+               "ddl_ref": "pipelines/facts/rmd/hc_fct_button_routing/sql-scripts/ddl.hc_fct_button_routing.sql",
+               "path": "pipelines/facts/rmd/hc_fct_button_routing",
+               "kafka_topic": null,
+               "complexity": {
+                  "number_of_regular_joins": 0,
+                  "number_of_left_joins": 2,
+                  "number_of_right_joins": 0,
+                  "number_of_inner_joins": 4,
+                  "number_of_outer_joins": 0,
+                  "complexity_type": "Complex",
+                  "state_form": "Stateful"
+               },
+               "parents": [],
+               "children": []
+            }
+         ]
+      },
+      {
+         "table_name": "hc_src_device_assignments",
+         "product_name": "seeds",
+         "type": "external_kafka",
+         "dml_ref": "",
+         "ddl_ref": "",
+         "path": "pipelines/seeds/hc_src_device_assignments",
+         "kafka_topic": "hc_src_device_assignments",
+         "complexity": {
+            "number_of_regular_joins": 0,
+            "number_of_left_joins": 0,
+            "number_of_right_joins": 0,
+            "number_of_inner_joins": 0,
+            "number_of_outer_joins": 0,
+            "complexity_type": "Simple",
+            "state_form": "Stateless"
+         },
+         "parents": [],
+         "children": [
+            {
+               "table_name": "hc_fct_assignment_verification_registry",
+               "product_name": "rmd",
+               "type": "fact",
+               "dml_ref": "pipelines/facts/rmd/hc_fct_button_routing/sql-scripts/dml.hc_fct_button_routing.sql",
+               "ddl_ref": "pipelines/facts/rmd/hc_fct_button_routing/sql-scripts/ddl.hc_fct_button_routing.sql",
+               "path": "pipelines/facts/rmd/hc_fct_button_routing",
+               "kafka_topic": null,
+               "complexity": {
+                  "number_of_regular_joins": 0,
+                  "number_of_left_joins": 2,
+                  "number_of_right_joins": 0,
+                  "number_of_inner_joins": 4,
+                  "number_of_outer_joins": 0,
+                  "complexity_type": "Complex",
+                  "state_form": "Stateful"
+               },
+               "parents": [],
+               "children": []
+            }
+         ]
+      },
+      {
+         "table_name": "hc_fct_device_verification",
+         "product_name": "seeds",
+         "type": "external_kafka",
+         "dml_ref": "",
+         "ddl_ref": "",
+         "path": "pipelines/seeds/hc_fct_device_verification",
+         "kafka_topic": "hc_fct_device_verification",
+         "complexity": {
+            "number_of_regular_joins": 0,
+            "number_of_left_joins": 0,
+            "number_of_right_joins": 0,
+            "number_of_inner_joins": 0,
+            "number_of_outer_joins": 0,
+            "complexity_type": "Simple",
+            "state_form": "Stateless"
+         },
+         "parents": [],
+         "children": [
+            {
+               "table_name": "hc_fct_assignment_verification_registry",
+               "product_name": "rmd",
+               "type": "fact",
+               "dml_ref": "pipelines/facts/rmd/hc_fct_button_routing/sql-scripts/dml.hc_fct_button_routing.sql",
+               "ddl_ref": "pipelines/facts/rmd/hc_fct_button_routing/sql-scripts/ddl.hc_fct_button_routing.sql",
+               "path": "pipelines/facts/rmd/hc_fct_button_routing",
+               "kafka_topic": null,
+               "complexity": {
+                  "number_of_regular_joins": 0,
+                  "number_of_left_joins": 2,
+                  "number_of_right_joins": 0,
+                  "number_of_inner_joins": 4,
+                  "number_of_outer_joins": 0,
+                  "complexity_type": "Complex",
+                  "state_form": "Stateful"
+               },
+               "parents": [],
+               "children": []
+            }
+         ]
+      },
+      {
+         "table_name": "hc_raw_device_events",
+         "product_name": "raw",
+         "type": "seed",
+         "dml_ref": "pipelines/seeds/raw/raw_device_events/sql-scripts/dml.device_events.sql",
+         "ddl_ref": "pipelines/seeds/raw/raw_device_events/sql-scripts/ddl.device_events.sql",
+         "path": "pipelines/seeds/raw/raw_device_events",
+         "kafka_topic": null,
+         "complexity": {
+            "number_of_regular_joins": 0,
+            "number_of_left_joins": 0,
+            "number_of_right_joins": 0,
+            "number_of_inner_joins": 0,
+            "number_of_outer_joins": 0,
+            "complexity_type": "Simple",
+            "state_form": "Stateless"
+         },
+         "parents": [],
+         "children": [
+            {
+               "table_name": "hc_fct_device_power_latest",
+               "product_name": "rmd",
+               "type": "fact",
+               "dml_ref": "pipelines/facts/rmd/hc_fct_device_ota/sql-scripts/dml.hc_fct_device_ota.sql",
+               "ddl_ref": "pipelines/facts/rmd/hc_fct_device_ota/sql-scripts/ddl.hc_fct_device_ota.sql",
+               "path": "pipelines/facts/rmd/hc_fct_device_ota",
+               "kafka_topic": null,
+               "complexity": {
+                  "number_of_regular_joins": 0,
+                  "number_of_left_joins": 2,
+                  "number_of_right_joins": 0,
+                  "number_of_inner_joins": 6,
+                  "number_of_outer_joins": 0,
+                  "complexity_type": "Complex",
+                  "state_form": "Stateful"
+               },
+               "parents": [],
+               "children": []
+            },
+            {
+               "table_name": "hc_fct_geofence_alerts",
+               "product_name": "rmd",
+               "type": "fact",
+               "dml_ref": "pipelines/facts/rmd/hc_fct_geofence_alerts/sql-scripts/dml.hc_fct_geofence_alerts.sql",
+               "ddl_ref": "pipelines/facts/rmd/hc_fct_geofence_alerts/sql-scripts/ddl.hc_fct_geofence_alerts.sql",
+               "path": "pipelines/facts/rmd/hc_fct_geofence_alerts",
+               "kafka_topic": null,
+               "complexity": {
+                  "number_of_regular_joins": 0,
+                  "number_of_left_joins": 0,
+                  "number_of_right_joins": 0,
+                  "number_of_inner_joins": 1,
+                  "number_of_outer_joins": 0,
+                  "complexity_type": "Simple",
+                  "state_form": "Stateful"
+               },
+               "parents": [],
+               "children": []
+            },
+            {
+               "table_name": "hc_fct_device_events_enriched",
+               "product_name": "rmd",
+               "type": "fact",
+               "dml_ref": "pipelines/facts/rmd/hc_fct_device_events_enriched/sql-scripts/dml.hc_fct_device_events_enriched.sql",
+               "ddl_ref": "pipelines/facts/rmd/hc_fct_device_events_enriched/sql-scripts/ddl.hc_fct_device_events_enriched.sql",
+               "path": "pipelines/facts/rmd/hc_fct_device_events_enriched",
+               "kafka_topic": null,
+               "complexity": {
+                  "number_of_regular_joins": 0,
+                  "number_of_left_joins": 0,
+                  "number_of_right_joins": 0,
+                  "number_of_inner_joins": 2,
+                  "number_of_outer_joins": 0,
+                  "complexity_type": "Simple",
+                  "state_form": "Stateful"
+               },
+               "parents": [],
+               "children": []
+            },
+            {
+               "table_name": "hc_fct_assignment_verification_registry",
+               "product_name": "rmd",
+               "type": "fact",
+               "dml_ref": "pipelines/facts/rmd/hc_fct_button_routing/sql-scripts/dml.hc_fct_button_routing.sql",
+               "ddl_ref": "pipelines/facts/rmd/hc_fct_button_routing/sql-scripts/ddl.hc_fct_button_routing.sql",
+               "path": "pipelines/facts/rmd/hc_fct_button_routing",
+               "kafka_topic": null,
+               "complexity": {
+                  "number_of_regular_joins": 0,
+                  "number_of_left_joins": 2,
+                  "number_of_right_joins": 0,
+                  "number_of_inner_joins": 4,
+                  "number_of_outer_joins": 0,
+                  "complexity_type": "Complex",
+                  "state_form": "Stateful"
+               },
+               "parents": [],
+               "children": []
+            },
+            {
+               "table_name": "hc_dim_cell_tower_zones",
+               "product_name": "rmd",
+               "type": "fact",
+               "dml_ref": "pipelines/facts/rmd/hc_fct_device_events_dq/sql-scripts/dml.hc_fct_device_events_dq.sql",
+               "ddl_ref": "pipelines/facts/rmd/hc_fct_device_events_dq/sql-scripts/ddl.hc_fct_device_events_dq.sql",
+               "path": "pipelines/facts/rmd/hc_fct_device_events_dq",
+               "kafka_topic": null,
+               "complexity": {
+                  "number_of_regular_joins": 0,
+                  "number_of_left_joins": 0,
+                  "number_of_right_joins": 0,
+                  "number_of_inner_joins": 1,
+                  "number_of_outer_joins": 0,
+                  "complexity_type": "Simple",
+                  "state_form": "Stateful"
+               },
+               "parents": [],
+               "children": []
+            }
+         ]
+      }
+   ],
+   "children": []
+}
