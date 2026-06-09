@@ -14,11 +14,16 @@ The scope of this repository is to build end-to-end healthcare doman demonstrati
 
 The approach is to use healthcare use cases, like Patient records, health provider, prescriptions and device management. 
 
-The demonstration illustrates:
+![](./docs/images/start_simul_metrics.png)
+
+**The demonstration illustrates:**
 * device metrics monitoring and compliance to a doctor's prescription. With the basic domain model but representing good foundations to present different real-time processing use cases. We use Flink to compare Command/Intent (The Prescription) against Reality (The Telemetry). 
 * Patient alert: some device may have urgent care button, so one use case addresses 
-* Device management
-The audiance of this demonstration is data engineers to understand the art of feaseable. 
+* Geofence: device getting out of care area.
+* Device management: implement a state machine per device to assess when to update firmware
+
+
+The audiance of this demonstration is data engineers who want  to understand the art of feaseable. 
 
 [See the published documentation](https://jbcodeforce.github.io/healthcare-shift-left-demo)
 
