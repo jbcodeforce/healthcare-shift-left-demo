@@ -367,4 +367,4 @@ echo "     See: IaC/README.md (section Tableflow and S3)"
 echo ""
 
 print_success "Healthcare Shift-Left Demo is ready!"
-print_info "For detailed documentation, see DEPLOYMENT_GUIDE.md"
+print_info "For detailed documentation, see docs/quick_start.md"

@@ -6,9 +6,9 @@ name: 'flink_pipelines'
 version: '1.0.0'
 config-version: 2
 
-profile: 'flink_pipelines'
+profile: 'cc-flink'
 
-model-paths: ["models"]
+model-paths: ["raw", "rmd"]
 analysis-paths: ["analyses"]
 test-paths: ["tests"]
 seed-paths: ["seeds"]

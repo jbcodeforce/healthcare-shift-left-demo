@@ -168,23 +168,11 @@ Access to the [demonstration web application](http://localhost:5173/)
 
 ![](./images/home_page.png)
 
-You can drive the demonstration from the user interface or via curl calls:
+You can drive the demonstration from the user interface or via curl:
 
 ```sh
-# Start simulation
+# Start simulation (wait for backend to be ready)
 sleep 10
-curl -X POST http://localhost:8000/simulation/start \
-  -H "Content-Type: application/json" \
-  -d '{"simulation_type": "all"}'
-```
-
-
-### Start Device Simulation
-
-The simulation sends telemetry data to Kafka:
-
-```bash
-# Start simulation for all devices
 curl -X POST http://localhost:8000/simulation/start \
   -H "Content-Type: application/json" \
   -d '{"simulation_type": "all"}'
@@ -194,7 +182,7 @@ curl http://localhost:8000/simulation/status
 
 # Stop simulation
 curl -X POST http://localhost:8000/simulation/stop
-``` 
+```
 
 ### Verify
 
@@ -220,12 +208,11 @@ open http://localhost:5173/analytics
 
 ## Deploy Flink Pipelines
 
-There are multiple ways to deploy flink statement:
+Ways to deploy Flink SQL statements:
 
-* [Terraform](#using-terraform) not recommended for production
-* Shift_left utils for bigger project using medaillon architecture, and best practices
-* [Dbt Confluent Adapter]
-* Confluent Cloud [REST api](#using-confluent-resp-api) with some custom python code
+* **Shift_left CLI** — recommended for medallion pipelines in this repo (below).
+* **[dbt + REST API](./DBT_DEPLOYMENT_GUIDE.md)** — `deploy_flink.py` / `dbt_flink_deploy.py` from `pipelines/flink_pipelines/`.
+* **Terraform** — optional; apply [`IaC/flink-statements/`](../IaC/flink-statements/) after core Confluent resources exist (see [IaC README](../IaC/README.md)).
 
 ### Using Shift Left CLI
 
@@ -261,23 +248,10 @@ There are multiple ways to deploy flink statement:
     ```sh
     shift_left  pipeline undeploy --product-name rmd --compute-pool-id $FLINK_COMPUTE_POOL_ID
     #
-    shift_left/cli.py  pipeline undeploy --product-name raw --compute-pool-id $FLINK_COMPUTE_POOL_ID
+    shift_left  pipeline undeploy --product-name raw --compute-pool-id $FLINK_COMPUTE_POOL_ID
     ```
 
-
-### Using Terraform
-
-
-### Using confluent RESP API
-
-
-```
-cd pipelines/flink_pipelines
-python3 deploy_flink.py --all
-
-# Deploy specific layer
-python3 deploy_flink.py --layer raw
-```
+For REST-based deployment (inventory or dbt manifest), see [DBT deployment guide](./DBT_DEPLOYMENT_GUIDE.md).
 
 ## Troubleshouting
 

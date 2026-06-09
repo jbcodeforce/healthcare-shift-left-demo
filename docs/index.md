@@ -4,7 +4,11 @@
 
 The scope of this repository is to build an end-to-end Flink, Kafka, Lake house healthcare demonstration, starting from Debezium CDC to Confluent Cloud Kafka, Flink SQL to process Raw->Bronze->Silver->Gold records, to sink s3 parquet/iceberg tables.
 
-The approach is to use healthcare use case, like Patient records, health providers, prescriptions and device monitoring. The demonstration illustrates device monitoring and compliance to a doctor's prescription. This is a basic domain model but representing enough foundations to present different real-time processing use cases. We use Flink to compare Command/Intent (The Prescription) against Reality (The Telemetry). 
+The approach is to use healthcare use case, like Patient records, health providers, prescriptions and device management. 
+
+The demonstration illustrates two main use cases:
+1. device monitoring and compliance to a doctor's prescription. This is a basic domain model but representing enough foundations to present different real-time processing use cases. We use Flink to compare Command/Intent (The Prescription) against Reality (The Telemetry). 
+1. Device management, specically software version management, first button action, and geofence.
 
 The audiance of this demonstration is data engineers to understand the art of feaseable. 
 
@@ -23,9 +27,10 @@ The figure below presents the production deployment of data streaming pipelines 
 
 <figure markdown="span">
 ![](./images/pipeline-view.drawio.png)
+<caption>**Figure 1: Classical Medallion with flink**</caption>
 </figure>
 
-In this demonstration only Prescription entities are using CDC. The landing zone represents the raw data, while a first layer of Flink processing helps to prepare silver data, with deduplication, schema transformation and filtering.
+In this demonstration only `Prescription` entities are using CDC. The landing zone represents the raw data, while a first layer of Flink processing helps to prepare silver data, with deduplication, schema transformation and filtering.
 
 This diagram also presents a second layer of Flink statements to prepare facts and dimensions as data-as-a-product.
 
@@ -33,33 +38,33 @@ This diagram also presents a second layer of Flink statements to prepare facts a
 
 To support this demonstration, the following deployment architecture is defined: 
 
-* the Flink and Topics are running in Confluent Cloud. 
-* Sink tables used for Lake house platform are saved in parquet format, with Apache Iceberg metadata, in a Cloud Provider object storage layer.\\
-* A webApp supports the demonstration script and presents business intelligence dashboards
-* The backend support producing data to Kafka, writing to a Postgresql database, and exposing APIs for dashboards
-* Debezium CDC Kafka connector is deployed locally to upload change data capture on the Prescription tables to Kafka
+* The Flink SQL statements and Topics are running in Confluent Cloud. 
+* Sink tables used for Lake house platform are saved in parquet format, with Apache Iceberg metadata, in a Cloud Provider object storage layer.
+* A webApp supports the demonstration scripts and is also used to present business intelligence dashboards. It runs locally.
+* The backend supports producing data to Kafka, writing to a Postgresql database, and exposing APIs for dashboards. It runs locally.
+* Debezium CDC Kafka connector is deployed locally to upload change data capture on the `Prescription` tables to Kafka
 * Confluent Cloud Flink Compute pool is defined to run the Flink SQL statements
 
 <figure markdown="span">
 ![](./images/demo_components.drawio.png)
+<caption>**Figure 2: Component view**</caption>
 </figure>
 The green components are for demonstration purpose and will run on your laptop.
 
-Here is an example of the WebApp home pag, with a sidebar to navigate into the demonstration steps:
+Here is an example of the WebApp home page, with a sidebar to navigate into the demonstration steps:
 <figure markdown="span">
 ![](./images/home_page.png)
+<caption>**Figure 3: WebApp home page**</caption>
 </figure>
 
 ### Demonstration Features
 
-* **Backend (FastAPI)** — REST API for patients, devices, and prescriptions; health check; device simulation (start/stop, all or single patient); device telemetry streamed via Server-Sent Events (SSE) and produced to Confluent Cloud Kafka (Avro + Schema Registry).
-* **PostgreSQL** — Prescriptions stored in Postgres with logical decoding enabled (`wal_level=logical`) for CDC. One row per prescription; parameters stored as JSON.
-* **Prescriptions CRUD** — Create, read, update, and delete prescriptions via API and frontend. Prescription IDs are generated with a 4-character suffix (e.g. `RX-DEV-P002-a3F9`) to avoid duplicates. Requires PostgreSQL (DATABASE_URL).
-* **Frontend (Vue.js)** — Control plane with navigation: Home, Patients, Devices, Prescriptions, Device telemetry, Demonstration. List views for patients, devices, and prescriptions (grouped by device); “New prescription” form with patient/device dropdowns and parameter rows; delete prescription per row; simulation control; live telemetry SSE stream.
-* **Kafka Connect + Debezium** — Connect runs in Docker Compose; Debezium PostgreSQL connector streams changes from the local `prescriptions` table to Confluent Cloud Kafka (Avro, Schema Registry). Topic prefix `healthcare` (e.g. `healthcare.public.prescriptions`). Register connector with `./connect/register-connector.sh`. The implementation adds a schema name stratefy to support different Schema Registry context.
-* **Pipelines** — Flink SQL DDL/DML for raw and RMD layers (e.g. raw_patients, raw_devices, raw_prescriptions, device_metrics). Deploy with shift-left tool to Confluent Cloud Flink.
-* **Kafka Consumer** for fact tables to report real-time dashboard back to the business intelligence dashboard 
+* **Control plane** — Vue.js UI and FastAPI backend for patients, devices, prescriptions, simulation, and live telemetry (SSE → Kafka).
+* **CDC** — PostgreSQL prescriptions streamed to Confluent via Debezium Kafka Connect.
+* **Stream processing** — Flink SQL pipelines (raw → RMD facts/dimensions); deploy with shift-left or dbt (see [Quick Start](./quick_start.md)).
+* **Analytics** — Dashboard backed by local Parquet samples or S3 via Tableflow ([IaC README](../IaC/README.md#tableflow-and-s3)).
 
+Component-level setup and extension notes: [Developer Instructions](./dev_instructions.md#understanding-the-main-components).
 
 ## Use Cases
 
@@ -90,11 +95,27 @@ With the Device telemetry web page, user can simulate Pressure, flowRate or flow
 
 <figure markdown="span">
 ![](./images/start_simul_metrics.png)
+<caption>**Figure 4: Metrics simulation**</caption>
 </figure>
 
 Once the simulation is running, the user can select one of the device and apply one of the 3 simulation.
 
 An [anomaly detection](https://docs.confluent.io/cloud/current/ai/builtin-functions/detect-anomalies.html#ml-detect-anomalies) query can assess the three metrics and report potential issue.
+
+### First Button Press
+
+Device has an emergency button that user can press. For device initiation, the users press the emergency button the first time to verify operation – not call for help. After that a press to the emergency button is an alert. This is supported by processing device_events. The following tables/topics are supporting this use case:
+
+| Table | location | Purpose |
+| ----- | -------- |---------|
+| hc_raw_device_events | [raw_device_events](https://github.com/jbcodeforce/healthcare-shift-left-demo/tree/main/pipelines/raw/raw_device_events) | Get raw device events. Events have a type that can drive different rules and processing |
+| hc_raw_device_assignments | [device_assignments]() | Device to user assignment |
+| hc_fct_assignment_verification_registry | [assignment_verification_registry]() | Assess if this is a first button press and keep it as a fact |
+| hc_button_press_enriched | []() | |
+| hc_device_verification | []() | |
+| fc_device_alert | []() | |
+
+
 
 ### Other extensions
 

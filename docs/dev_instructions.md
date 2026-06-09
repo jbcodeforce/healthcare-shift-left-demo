@@ -54,7 +54,7 @@ CONFLUENT_CLOUD_API_SECRET=cflt....
 
 For **PostgreSQL** (prescriptions CRUD and Debezium), the Compose stack uses `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` (defaults: `demo`, `demo`, `healthcare`). For local backend dev, set `DATABASE_URL=postgresql://demo:demo@localhost:5432/healthcare` (or match your Postgres credentials if you change them).
 
-The IaC folder includes terraforms to create a new Confluent Cloud Environment, kafka cluster.. or use an existing one. [See quickstart](./quick_start.md/#infrastructure-as-code) section.
+The IaC folder provisions Confluent Cloud (environment, Kafka, Flink pool, API keys) and optional AWS S3 for Tableflow. See [Infrastructure as Code](./quick_start.md#infrastructure-as-code) in the Quick Start guide and [IaC/README.md](../IaC/README.md) for details.
 
 ## How to run the demo
 

@@ -1,6 +1,5 @@
 # Healthcare Shift-Left Demo - Flink Pipelines (dbt)
 
-End-to-end flow: **inventory → generated dbt models → `dbt compile` → manifest → Confluent Flink REST API**.
 
 ## How it works
 
@@ -51,5 +50,5 @@ dbt docs generate && dbt docs serve
 
 ## See also
 
-- [DBT deployment guide](../DBT_DEPLOYMENT_GUIDE.md)
+- [DBT deployment guide](../../docs/DBT_DEPLOYMENT_GUIDE.md)
 - [IaC / Terraform](../../IaC/README.md)

@@ -1,10 +1,12 @@
 # Demonstration Scenarios
 
-Once the WebApplication is started, all the demonstration happens in this application and within Confluent Cloud console.
+*Review [note](./quick_start.md) to start the demonstration*.
+
+Once the WebApplication is started, all the demonstration happens in this application and within Confluent Cloud Console.
 
 ## 1- Review the Domain
 
-* We have fake patients (few of them as the volume is not the scope of the demonstration)
+* We have fake patients (few of them as the patient volume is not the scope of the demonstration)
 <figure markdown="span">
     ![](./images/patients_view.png)
 </figure>

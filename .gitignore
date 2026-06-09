@@ -5,3 +5,7 @@ connect/subject-strategy/target/
 site/
 CLAUDE.md
 **/*.log
+**/.cursor/
+**/target/
+**/dbt_packages/
+**/logs/
